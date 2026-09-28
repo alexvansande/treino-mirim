@@ -64,6 +64,27 @@
          padding:36px 28px; text-align:center; margin-top:60px;}
   .final h2{font-size:25px; font-weight:800; margin:0 0 8px;}
   .final p{font-size:17px; line-height:1.6; margin:0;}
+  .voltar{background:none; border:none; color:var(--grape); font:inherit; font-size:15px; font-weight:800;
+      letter-spacing:.5px; padding:6px 0; margin-bottom:10px; cursor:pointer;}
+  .provas{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px;}
+  .prova{text-align:left; background:var(--card); border:2.5px solid var(--line); border-radius:18px;
+      padding:20px; font:inherit; color:var(--ink); cursor:pointer;}
+  .prova .pnome{font-size:24px; font-weight:800;}
+  .prova .pinfo{font-size:14px; color:var(--soft); font-weight:600; margin-top:2px;}
+  .prova .pbarra{margin:14px 0; height:8px; border-radius:999px; background:var(--line); overflow:hidden;}
+  .prova .pbarra div{height:100%; background:var(--grape); border-radius:999px;}
+  .prova .prodape{display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;}
+  .prova .chip{font-size:12px; font-weight:800; letter-spacing:.5px; padding:5px 10px; border-radius:999px;
+      background:var(--grapeSoft); color:var(--grape);}
+  .prova .pest{font-size:15px; font-weight:800; color:var(--amber);}
+  .prova.feita{border-color:var(--leaf);}
+  .prova.feita .chip{background:var(--leafSoft); color:var(--leaf);}
+  .prova.feita .pbarra div{background:var(--leaf);}
+  .prova.andamento{border-color:var(--grape);}
+  .final .botoes{display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
+  .btn.sec{background:var(--card); color:var(--grape); border:2.5px solid var(--grape);}
+  .final .obs{font-size:14px; color:var(--soft); margin-top:10px;}
+  .final{margin-top:20px;}
 </style>
 </head>
 <body>
@@ -493,44 +514,707 @@ var Q=[
  resp:"São 9 pegadas alternando, começando pelo pé esquerdo: esquerdo, direito, esquerdo, direito... Os pés esquerdos são as posições 1, 3, 5, 7 e 9 (cinco pegadas) e os direitos são as posições 2, 4, 6 e 8 (quatro pegadas)."}
 ];
 
-/* ---------- estado ---------- */
-var CHAVE="treino-mirim-v1";
-function carregar(){
-  try{ var r=localStorage.getItem(CHAVE); return r?JSON.parse(r):{feitas:0,estrelas:{}}; }
-  catch(e){ return {feitas:0,estrelas:{}}; }
+
+/* ---------- peças extras para as provas novas ---------- */
+function bola(x,y,r,f){ return '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+(f||SKY)+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+function arvore(x,y){ return '<rect x="'+(x-3)+'" y="'+(y-14)+'" width="6" height="14" fill="#9C7650"/>'+
+  '<circle cx="'+x+'" cy="'+(y-24)+'" r="13" fill="'+LEAF+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+function lata(x,y){ return '<rect x="'+x+'" y="'+y+'" width="30" height="26" rx="3" fill="#E7A94F" stroke="'+INK+'" stroke-width="1.2"/>'+
+  '<rect x="'+x+'" y="'+(y+8)+'" width="30" height="10" fill="#fff" opacity="0.7"/>'; }
+function relogio(cx,cy,r,h,m){
+  var o='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="#fff" stroke="'+INK+'" stroke-width="3"/>';
+  for(var i=1;i<=12;i++){ var a=Math.PI/6*i-Math.PI/2;
+    o+=txt((cx+(r-15)*Math.cos(a)).toFixed(1),(cy+(r-15)*Math.sin(a)+5).toFixed(1),i,{s:13,w:700}); }
+  var ah=Math.PI/6*(h+m/60)-Math.PI/2, am=Math.PI/30*m-Math.PI/2;
+  o+='<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+r*0.48*Math.cos(ah)).toFixed(1)+'" y2="'+(cy+r*0.48*Math.sin(ah)).toFixed(1)+'" stroke="'+INK+'" stroke-width="5" stroke-linecap="round"/>'+
+     '<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+r*0.75*Math.cos(am)).toFixed(1)+'" y2="'+(cy+r*0.75*Math.sin(am)).toFixed(1)+'" stroke="'+GRAPE+'" stroke-width="3" stroke-linecap="round"/>'+
+     '<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="'+INK+'"/>';
+  return o;
 }
+function pontos(cx,cy,n,sz){ /* pontinhos de dado/dominó num quadrado de lado sz centrado em cx,cy */
+  var d=sz*0.28, P={1:[[0,0]],2:[[-1,-1],[1,1]],3:[[-1,-1],[0,0],[1,1]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],
+    5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],6:[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1]]}, o="";
+  (P[n]||[]).forEach(function(p){ o+='<circle cx="'+(cx+p[0]*d)+'" cy="'+(cy+p[1]*d)+'" r="'+(sz*0.09)+'" fill="'+INK+'"/>'; });
+  return o;
+}
+function recorte(furos){ /* folha aberta (miniatura para as alternativas) */
+  return '<svg viewBox="0 0 200 80" style="max-width:200px"><rect x="30" y="4" width="140" height="72" rx="3" fill="#fff" stroke="'+INK+'" stroke-width="1.6"/>'+
+    '<line x1="100" y1="4" x2="100" y2="76" stroke="'+SOFT+'" stroke-width="1.2" stroke-dasharray="4 3"/>'+
+    furos.map(function(p){ return '<polygon points="'+p+'" fill="'+INK+'"/>'; }).join("")+'</svg>';
+}
+
+/* ---------- PROVA 2 ---------- */
+var Q2=[
+{id:"p2-trem",fam:"Conte os vãos, não os postes",
+ txt:"UM TREM TEM 15 VAGÕES. ENTRE CADA DOIS VAGÕES VIZINHOS HÁ UM ENGATE QUE PRENDE UM NO OUTRO. QUANTOS ENGATES O TREM TEM?",
+ ill:(function(){var o="", xs=[20,82,144,206,300];
+   xs.forEach(function(x,i){
+     o+='<rect x="'+x+'" y="60" width="50" height="32" rx="5" fill="'+(i===4?GRAPESOFT:"#F3EEE4")+'" stroke="'+INK+'" stroke-width="1.5"/>'+
+        '<circle cx="'+(x+12)+'" cy="96" r="6" fill="'+INK+'"/><circle cx="'+(x+38)+'" cy="96" r="6" fill="'+INK+'"/>'+
+        txt(x+25,82,(i===4?15:i+1)+"º",{s:12,w:700});
+     if(i<3) o+='<rect x="'+(x+50)+'" y="72" width="12" height="7" rx="2" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1"/>';
+   });
+   o+='<rect x="256" y="72" width="10" height="7" rx="2" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1"/>'+
+      txt(279,82,"...",{s:18,w:800,f:SOFT})+'<rect x="290" y="72" width="10" height="7" rx="2" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1"/>'+
+      '<line x1="10" y1="104" x2="355" y2="104" stroke="'+SOFT+'" stroke-width="2"/>'+
+      leg(180,135,"o engate é a pecinha laranja entre dois vagões");
+   return svg("0 0 360 150","Trem com vagões ligados por engates",o);})(),
+ opts:["13","14","15","16","30"],ans:1,
+ dica:{0:"Um a menos. Experimente com um trem pequeno: 2 vagões têm 1 engate, 3 vagões têm 2 engates...",
+       2:"Quinze é o número de VAGÕES. Os engates ficam só ENTRE os vagões: o último vagão não tem engate atrás dele.",
+       3:"Tem engates demais. Com 2 vagões há só 1 engate. Veja o que acontece com 3 vagões.",
+       4:"Um engate é dividido por dois vagões vizinhos, então não dá dois engates por vagão."},
+ resp:"Os engates ficam nos espaços entre os vagões. Com 2 vagões há 1 engate, com 3 vagões há 2 engates: sempre um a menos que os vagões. Então 15 vagões têm 15 − 1 = 14 engates."},
+
+{id:"p2-arvores",fam:"Conte os vãos, não os postes",
+ txt:"JOÃO VAI PLANTAR ÁRVORES EM LINHA RETA NUM CANTEIRO DE 10 METROS. ELE PLANTA UMA ÁRVORE NO COMEÇO, UMA NO FIM E UMA A CADA 2 METROS. QUANTAS ÁRVORES ELE VAI PLANTAR?",
+ ill:(function(){var o='<rect x="25" y="100" width="310" height="14" rx="4" fill="#C9A87C"/>';
+   for(var i=0;i<=10;i++){ var x=30+i*30; o+='<line x1="'+x+'" y1="118" x2="'+x+'" y2="'+(i%2?124:130)+'" stroke="'+INK+'" stroke-width="1.2"/>'+txt(x,146,i,{s:11,w:500}); }
+   o+=arvore(30,100)+arvore(90,100)+
+      '<path d="M34 60 h52" stroke="'+GRAPE+'" stroke-width="1.5"/>'+txt(60,54,"2 m",{s:12,f:GRAPE,w:700})+
+      leg(180,172,"o canteiro vai do 0 até o 10 (em metros)");
+   return svg("0 0 360 185","Canteiro de 10 metros com as duas primeiras árvores",o);})(),
+ opts:["4","5","6","10","20"],ans:2,
+ dica:{0:"Faltaram as pontas: tem árvore no começo (no 0) e no fim (no 10).",
+       1:"Cinco é o número de ESPAÇOS de 2 metros. Mas tem árvore nas duas pontas de cada espaço.",
+       3:"Dez é o comprimento do canteiro. As árvores ficam de 2 em 2 metros, não de 1 em 1.",
+       4:"Vinte é 10 × 2. Aqui não é para multiplicar: conte os lugares 0, 2, 4..."},
+ resp:"As árvores ficam nas marcas 0, 2, 4, 6, 8 e 10. São 6 árvores. Cinco espaços de 2 metros precisam de 6 árvores, porque tem uma árvore a mais nas pontas."},
+
+{id:"p2-frutas",fam:"Troca justa",
+ txt:"AS DUAS BALANÇAS ESTÃO EQUILIBRADAS. QUANTAS MAÇÃS PESAM O MESMO QUE DUAS MELANCIAS?",
+ ill:(function(){
+   function mel(){ return '<ellipse cx="0" cy="-15" rx="22" ry="15" fill="'+LEAF+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   function abx(dx){ return '<ellipse cx="'+dx+'" cy="-12" rx="7" ry="11" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+     '<path d="M'+(dx-4)+' -22 l4 -8 l4 8" fill="'+LEAF+'" stroke="'+INK+'" stroke-width="1"/>'; }
+   function mac(dx){ return '<circle cx="'+dx+'" cy="-10" r="9" fill="'+ROSE+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   return svg("0 0 360 230","Duas balanças: melancia contra abacaxis, abacaxi contra maçãs",
+     balanca(110,50,120,mel(),abx(-16)+abx(0)+abx(16))+leg(110,122,"1 melancia = 3 abacaxis")+
+     balanca(250,140,120,abx(0),mac(-10)+mac(10))+leg(250,212,"1 abacaxi = 2 maçãs"));})(),
+ opts:["5","6","8","10","12"],ans:4,
+ dica:{0:"Você somou 3 + 2. Aqui não é somar: cada abacaxi vira duas maçãs.",
+       1:"Seis maçãs é o peso de UMA melancia. A pergunta fala de DUAS melancias.",
+       2:"Oito não aparece em nenhuma troca. Troque primeiro as melancias por abacaxis.",
+       3:"Quase! Conte de novo: quantos abacaxis valem as duas melancias?"},
+ resp:"Duas melancias valem 3 + 3 = 6 abacaxis. Cada abacaxi vale 2 maçãs, então 6 abacaxis valem 2 + 2 + 2 + 2 + 2 + 2 = 12 maçãs."},
+
+{id:"p2-espelho",fam:"Virar de lado",
+ txt:"NO ESPELHO, O QUE ESTÁ NA DIREITA APARECE NA ESQUERDA. POR ISSO A LETRA R APARECE AO CONTRÁRIO. QUAL DESTAS LETRAS CONTINUA IGUALZINHA QUANDO VISTA NO ESPELHO?",
+ ill:svg("0 0 360 170","A letra R e seu reflexo invertido num espelho",
+   txt(110,110,"R",{s:90,w:800})+
+   '<rect x="176" y="20" width="10" height="120" rx="3" fill="#BFE0F2" stroke="'+INK+'" stroke-width="1.5"/>'+
+   '<g transform="translate(500,0) scale(-1,1)">'+txt(250,110,"R",{s:90,w:800,f:SOFT})+'</g>'+
+   leg(110,160,"a letra")+leg(250,160,"no espelho")),
+ opts:["B","C","A","E","R"],ans:2,
+ dica:{0:"A barriga do B está virada para a direita. No espelho ela passa a ficar virada para a esquerda.",
+       1:"O C é aberto para a direita. No espelho ele fica aberto para a esquerda.",
+       3:"Os tracinhos do E apontam para a direita. No espelho eles apontam para a esquerda.",
+       4:"Olhe o desenho: o próprio R fica ao contrário no espelho."},
+ resp:"A letra A tem o lado esquerdo igualzinho ao direito: se você dobrar ao meio de cima para baixo, uma metade cobre a outra. Letras assim não mudam no espelho. Outras letras assim são H, I, M, O, T, U, V e X."},
+
+{id:"p2-latas",fam:"Descubra a regra",
+ txt:"LIA EMPILHOU 10 LATAS EM 4 FILEIRAS, COMO NA FIGURA. CADA FILEIRA TEM UMA LATA A MENOS QUE A DE BAIXO. QUANTAS LATAS ELA PRECISA AO TODO PARA FAZER UMA PILHA ASSIM COM 5 FILEIRAS?",
+ ill:(function(){var o="";
+   [4,3,2,1].forEach(function(n,r){ for(var i=0;i<n;i++) o+=lata(120+r*16+i*32,150-r*28); });
+   o+='<line x1="80" y1="177" x2="280" y2="177" stroke="'+SOFT+'" stroke-width="2"/>'+leg(180,196,"4 + 3 + 2 + 1 = 10 latas");
+   return svg("0 0 360 205","Pilha de latas em quatro fileiras",o);})(),
+ opts:["11","12","14","15","20"],ans:3,
+ dica:{0:"A fileira nova vai embaixo de todas e precisa ser a maior. Tem mais de uma lata.",
+       1:"Pense: a fileira de baixo agora tem 4 latas. A nova fileira, ainda mais embaixo, tem quantas?",
+       2:"Quase! A nova fileira tem uma lata a mais que a fileira de 4.",
+       4:"Vinte é o dobro de 10, mas a pilha não dobra: só ganha uma fileira nova embaixo."},
+ resp:"A nova fileira vai embaixo e tem uma lata a mais que a de 4, ou seja, 5 latas. Então a pilha fica com 5 + 4 + 3 + 2 + 1 = 15 latas."},
+
+{id:"p2-cadeiras",fam:"Cada um no seu lugar",
+ txt:"ANA, BETO E CAIO SENTARAM EM TRÊS CADEIRAS LADO A LADO. ANA NÃO SENTOU EM NENHUMA DAS PONTAS. BETO SENTOU À ESQUERDA DA ANA. QUEM SENTOU NA CADEIRA DA PONTA DIREITA?",
+ ill:(function(){var o="";
+   [90,180,270].forEach(function(x){
+     o+='<rect x="'+(x-28)+'" y="40" width="56" height="50" rx="6" fill="'+GRAPESOFT+'" stroke="'+INK+'" stroke-width="1.5"/>'+
+        '<rect x="'+(x-32)+'" y="88" width="64" height="12" rx="3" fill="'+GRAPE+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+        '<line x1="'+(x-26)+'" y1="100" x2="'+(x-26)+'" y2="130" stroke="'+INK+'" stroke-width="3"/>'+
+        '<line x1="'+(x+26)+'" y1="100" x2="'+(x+26)+'" y2="130" stroke="'+INK+'" stroke-width="3"/>'+
+        txt(x,74,"?",{s:26,w:800,f:GRAPE});});
+   o+=leg(90,152,"ponta esquerda")+leg(180,152,"meio")+leg(270,152,"ponta direita");
+   return svg("0 0 360 170","Três cadeiras lado a lado",o);})(),
+ opts:["ANA","BETO","CAIO","NÃO DÁ PARA SABER"],ans:2,
+ dica:{0:"A Ana não sentou em nenhuma das pontas.",
+       1:"O Beto está à ESQUERDA da Ana, então ele não pode estar na ponta da direita.",
+       3:"Dá para saber sim! Comece pela Ana: se ela não está nas pontas, onde ela está?"},
+ resp:"Se a Ana não está nas pontas, ela está no meio. O Beto está à esquerda dela, então fica na ponta esquerda. Sobra a ponta direita para o Caio."},
+
+{id:"p2-bolas",fam:"Ter certeza",
+ txt:"NUMA CAIXA HÁ 3 BOLAS VERDES, 3 AMARELAS E 3 AZUIS. SEM OLHAR, QUAL É O MENOR NÚMERO DE BOLAS QUE BIA PRECISA TIRAR PARA TER CERTEZA DE PEGAR PELO MENOS UMA VERDE?",
+ ill:(function(){var o='<path d="M70 50 h220 l-18 110 h-184 z" fill="#E9DCC6" stroke="'+INK+'" stroke-width="2"/>';
+   var c=[LEAF,AMBER,SKY,AMBER,LEAF,SKY,SKY,LEAF,AMBER];
+   c.forEach(function(f,i){ o+=bola(115+(i%3)*60+(Math.floor(i/3)%2)*14,80+Math.floor(i/3)*28,12,f); });
+   o+=leg(180,182,"ela não pode olhar dentro da caixa");
+   return svg("0 0 360 195","Caixa com nove bolas verdes, amarelas e azuis",o);})(),
+ opts:["1","3","4","7","9"],ans:3,
+ dica:{0:"Com uma bola só ela pode dar azar e tirar uma amarela.",
+       1:"Com azar, as 3 primeiras podem ser as 3 amarelas.",
+       2:"Pense no MAIOR azar: podem sair todas as amarelas e também todas as azuis antes de sair uma verde.",
+       4:"Com 9 ela tira a caixa inteira. Dá para ter certeza com menos."},
+ resp:"Pense no pior azar possível: saem primeiro as 3 amarelas e as 3 azuis. São 6 bolas e nenhuma verde! Mas agora só sobram verdes na caixa, então a 7ª bola é verde com certeza."},
+
+{id:"p2-sucos",fam:"Não conte duas vezes",
+ txt:"NUMA TURMA, 10 CRIANÇAS GOSTAM DE SUCO E 8 GOSTAM DE LEITE. DESSAS, 3 CRIANÇAS GOSTAM DOS DOIS. TODAS AS CRIANÇAS DA TURMA GOSTAM DE PELO MENOS UM DELES. QUANTAS CRIANÇAS HÁ NA TURMA?",
+ ill:svg("0 0 360 200","Dois círculos que se cruzam: suco e leite",
+   '<circle cx="140" cy="100" r="72" fill="'+AMBER+'" opacity="0.35" stroke="'+AMBER+'" stroke-width="2.5"/>'+
+   '<circle cx="220" cy="100" r="72" fill="'+SKY+'" opacity="0.35" stroke="'+SKY+'" stroke-width="2.5"/>'+
+   txt(105,40,"SUCO: 10",{s:13,w:800,f:"#B87615"})+txt(258,40,"LEITE: 8",{s:13,w:800,f:"#2A7FAE"})+
+   txt(180,108,"3",{s:26,w:800})+leg(180,125,"os dois")+
+   txt(118,108,"?",{s:22,w:800,f:SOFT})+txt(242,108,"?",{s:22,w:800,f:SOFT})),
+ opts:["5","13","15","18","21"],ans:2,
+ dica:{0:"Cinco é só quem gosta de leite e NÃO gosta de suco. Faltam as outras crianças.",
+       1:"Faltou alguém. Conte separado: só suco, só leite e os dois.",
+       3:"Com 10 + 8 as 3 crianças do meio são contadas duas vezes: uma no suco e outra no leite.",
+       4:"As 3 crianças que gostam dos dois já estão dentro do 10 e dentro do 8. Não precisa somar de novo."},
+ resp:"Só suco: 10 − 3 = 7. Só leite: 8 − 3 = 5. Os dois: 3. Somando: 7 + 5 + 3 = 15. Outro jeito: 10 + 8 = 18, mas as 3 do meio foram contadas duas vezes, então 18 − 3 = 15."},
+
+{id:"p2-sequencia",fam:"Descubra a regra",
+ txt:"AS FIGURAS SE REPETEM SEMPRE NA MESMA ORDEM: ESTRELA, ESTRELA, CORAÇÃO, LUA, ESTRELA, ESTRELA, CORAÇÃO, LUA... QUAL SERÁ A 20ª FIGURA?",
+ ill:(function(){var o="", f=["e","e","c","l","e","e"];
+   f.forEach(function(t,i){ var x=35+i*50;
+     o+=(t==="e"?estrela(x,60,17):t==="c"?coracao(x,60,17):lua(x,60,17))+txt(x,105,(i+1)+"ª",{s:12,w:600,f:SOFT}); });
+   o+=txt(330,66,"...",{s:22,w:800,f:SOFT})+leg(180,140,"qual figura vai na 20ª posição?");
+   return svg("0 0 360 155","Sequência de figuras que se repete",o);})(),
+ opts:["ESTRELA","CORAÇÃO","LUA"],ans:2,
+ dica:{0:"As estrelas ficam nas posições 1, 2, 5, 6, 9, 10... O 20 não está nessa lista.",
+       1:"O coração fica nas posições 3, 7, 11, 15, 19... Veja qual figura vem logo depois da 19ª."},
+ resp:"O grupo estrela, estrela, coração, lua tem 4 figuras e se repete. A lua é sempre a última do grupo: 4ª, 8ª, 12ª, 16ª, 20ª. Então a 20ª figura é uma lua."},
+
+{id:"p2-filme",fam:"Olhe direito",
+ txt:"O RELÓGIO MOSTRA A HORA EM QUE O FILME COMEÇOU. O FILME DUROU 1 HORA E 30 MINUTOS. A QUE HORAS ELE TERMINOU?",
+ ill:svg("0 0 360 200","Relógio marcando 3 horas e 40 minutos",relogio(180,100,80,3,40)+leg(180,195,"o ponteiro pequeno mostra as horas, o grande mostra os minutos")),
+ opts:["4 HORAS E 10 MINUTOS","5 HORAS","5 HORAS E 10 MINUTOS","5 HORAS E 20 MINUTOS","5 HORAS E 40 MINUTOS"],ans:2,
+ dica:{0:"Você somou só a meia hora. Não esqueça de somar também a 1 hora.",
+       1:"Quase! Das 3h40 mais 1 hora dá 4h40. Mais 20 minutos dá 5h00, mas ainda faltam 10 minutos.",
+       3:"Um pouco demais. Depois das 4h40, meia hora leva até quanto?",
+       4:"Isso seria somar 2 horas. O filme durou 1 hora e meia."},
+ resp:"O filme começou às 3 horas e 40 minutos. Mais 1 hora: 4h40. Mais 20 minutos: 5h00. Mais 10 minutos: 5h10 (20 + 10 = 30 minutos). Terminou às 5 horas e 10 minutos."},
+
+{id:"p2-quadrados",fam:"Olhe direito",
+ txt:"QUANTOS QUADRADOS EXISTEM NESTA FIGURA? CUIDADO: TEM QUADRADO FORMADO POR MAIS DE UM PEDACINHO.",
+ ill:svg("0 0 360 200","Quadrado dividido em quatro quadradinhos",
+   '<g transform="translate(110,20)">'+grade(2,2,70,0,0,function(){return "#EAF4FB";})+'</g>'+
+   leg(180,190,"um quadrado grande dividido em quatro pedacinhos")),
+ opts:["4","5","6","8","9"],ans:1,
+ dica:{0:"Você contou só os pedacinhos. Falta um quadrado bem grande.",
+       2:"Um a mais. Dois pedacinhos juntos formam um retângulo, não um quadrado.",
+       3:"Bem mais do que existe. Conte os pequenos e depois os que juntam vários.",
+       4:"Bem mais do que existe. Só um quadrado é formado por vários pedacinhos."},
+ resp:"São 4 quadrados pequenos e mais 1 quadrado grande, que é a figura inteira. Total: 5. Dois pedacinhos juntos formam um retângulo comprido, que não é quadrado."},
+
+{id:"p2-notas",fam:"Montar direitinho",
+ txt:"DE QUANTOS JEITOS DIFERENTES DÁ PARA PAGAR EXATAMENTE 10 REAIS USANDO SÓ NOTAS DE 2 REAIS E NOTAS DE 5 REAIS? (PODE USAR SÓ UM TIPO DE NOTA.)",
+ ill:(function(){var o="";
+   [[40,"2",SKY],[200,"5",GRAPE]].forEach(function(n){
+     o+='<rect x="'+n[0]+'" y="45" width="120" height="62" rx="8" fill="'+n[2]+'" opacity="0.85" stroke="'+INK+'" stroke-width="2"/>'+
+        '<circle cx="'+(n[0]+60)+'" cy="76" r="20" fill="#fff" opacity="0.8"/>'+txt(n[0]+60,85,n[1],{s:24,w:800})+
+        txt(n[0]+16,64,"R$",{s:11,a:"start",f:"#fff",w:700});});
+   o+=leg(180,140,"ela tem quantas notas quiser de cada tipo");
+   return svg("0 0 360 160","Nota de 2 reais e nota de 5 reais",o);})(),
+ opts:["1","2","3","4","5"],ans:1,
+ dica:{0:"Tem mais de um jeito! Tente pagar só com notas de 2, e depois só com notas de 5.",
+       2:"Tente usar UMA nota de 5: sobram 5 reais. Dá para pagar 5 reais só com notas de 2?",
+       3:"Tente listar: só notas de 2, só notas de 5, e misturando. Nem todo jeito funciona.",
+       4:"Tente listar: só notas de 2, só notas de 5, e misturando. Nem todo jeito funciona."},
+ resp:"Só com notas de 2: 2+2+2+2+2 = 10. Só com notas de 5: 5+5 = 10. Misturando, com uma nota de 5 sobram 5 reais, e 5 não dá para fazer só com notas de 2 (2+2 = 4, 2+2+2 = 6). Então são 2 jeitos."}
+];
+
+/* ---------- PROVA 3 ---------- */
+var Q3=[
+{id:"p3-idades",fam:"Troca justa",
+ txt:"HOJE PAULO TEM 7 ANOS E SUA IRMÃ LIA TEM 3 ANOS. QUANDO LIA TIVER 10 ANOS, QUANTOS ANOS PAULO VAI TER?",
+ ill:(function(){var o='<g transform="translate(0,20)">';
+   o+='<g transform="translate(120,40) scale(1.8)">'+crianca(0,20,GRAPE)+'</g>'+txt(120,120,"PAULO: 7",{s:14,w:800})+
+      '<g transform="translate(240,56) scale(1.35)">'+crianca(0,20,ROSE)+'</g>'+txt(240,120,"LIA: 3",{s:14,w:800})+'</g>';
+   o+=leg(180,172,"todo ano os dois fazem aniversário");
+   return svg("0 0 360 185","Paulo com 7 anos e Lia com 3 anos",o);})(),
+ opts:["10","13","14","17","20"],ans:2,
+ dica:{0:"Dez é a idade da Lia. O Paulo é mais velho que ela.",
+       1:"Quase! Veja quantos anos o Paulo é mais velho: 7 − 3.",
+       3:"Dezessete é 7 + 10. Mas não passam 10 anos: a Lia vai de 3 até 10.",
+       4:"Vinte é o dobro de 10. Mas o Paulo não tem o dobro da idade da Lia."},
+ resp:"O Paulo é 7 − 3 = 4 anos mais velho que a Lia, e essa diferença nunca muda. Quando a Lia tiver 10, o Paulo terá 10 + 4 = 14. (Outro jeito: passam 10 − 3 = 7 anos, e 7 + 7 = 14.)"},
+
+{id:"p3-tronco",fam:"Conte os vãos, não os postes",
+ txt:"SEU JOSÉ VAI SERRAR UM TRONCO EM 6 PEDAÇOS. CADA CORTE DEMORA 2 MINUTOS. QUANTOS MINUTOS ELE VAI DEMORAR PARA TERMINAR?",
+ ill:svg("0 0 360 160","Tronco com um corte marcado",
+   '<rect x="40" y="55" width="270" height="50" rx="10" fill="#B8895B" stroke="'+INK+'" stroke-width="2"/>'+
+   '<ellipse cx="310" cy="80" rx="12" ry="25" fill="#E0C49B" stroke="'+INK+'" stroke-width="2"/>'+
+   '<line x1="85" y1="45" x2="85" y2="115" stroke="'+ROSE+'" stroke-width="2.5" stroke-dasharray="5 4"/>'+
+   txt(85,38,"1 corte",{s:12,f:ROSE,w:700})+leg(180,140,"um corte = 2 minutos")),
+ opts:["5","6","10","11","12"],ans:2,
+ dica:{0:"Cinco é o número de CORTES. Cada corte demora 2 minutos.",
+       1:"Seis é o número de pedaços, não de minutos.",
+       3:"Onze não é a conta. Descubra quantos cortes são e multiplique pelos 2 minutos.",
+       4:"Quase! Doze seria com 6 cortes. Mas para ter 6 pedaços não precisa de 6 cortes."},
+ resp:"Para fazer 2 pedaços é preciso 1 corte, para 3 pedaços, 2 cortes... sempre um corte a menos que os pedaços. Para 6 pedaços são 5 cortes. Como cada corte demora 2 minutos: 5 × 2 = 10 minutos."},
+
+{id:"p3-balanca",fam:"Troca justa",
+ txt:"A BALANÇA ESTÁ EQUILIBRADA. TODAS AS BOLAS PESAM O MESMO E TODOS OS CUBOS PESAM O MESMO. QUANTOS CUBOS PESAM O MESMO QUE UMA BOLA?",
+ ill:(function(){
+   var o='<line x1="60" y1="60" x2="300" y2="60" stroke="'+INK+'" stroke-width="3" stroke-linecap="round"/>'+
+     '<polygon points="180,60 166,110 194,110" fill="'+SOFT+'"/>'+
+     '<path d="M20 100 h115 M225 100 h115" stroke="'+INK+'" stroke-width="3" stroke-linecap="round"/>'+
+     '<line x1="60" y1="60" x2="60" y2="100" stroke="'+INK+'" stroke-width="1.5"/><line x1="300" y1="60" x2="300" y2="100" stroke="'+INK+'" stroke-width="1.5"/>';
+   o+=bola(35,88,11)+bola(59,88,11)+bola(83,88,11)+cubo(100,86,12)+cubo(118,86,12);
+   o+=bola(242,88,11)+cubo(258,86,12)+cubo(276,86,12)+cubo(294,86,12)+cubo(312,86,12)+cubo(267,70,12)+cubo(292,70,12);
+   o+=leg(78,128,"3 bolas e 2 cubos")+leg(282,128,"1 bola e 6 cubos");
+   return svg("0 0 360 150","Balança com 3 bolas e 2 cubos de um lado e 1 bola e 6 cubos do outro",o);})(),
+ opts:["1","2","3","4","6"],ans:1,
+ dica:{0:"Se uma bola valesse 1 cubo, a esquerda teria o peso de 5 cubos e a direita, de 7. Não equilibra.",
+       2:"Confira: com 3 cubos por bola, a esquerda pesaria 11 cubos e a direita 9.",
+       3:"Quatro cubos equilibram DUAS bolas. A pergunta é sobre uma bola.",
+       4:"Seis é o número de cubos da direita. Mas lá também tem uma bola."},
+ resp:"Tire uma bola e dois cubos dos DOIS lados: a balança continua equilibrada. Sobram 2 bolas na esquerda e 4 cubos na direita. Então 2 bolas = 4 cubos, e 1 bola = 2 cubos."},
+
+{id:"p3-dado",fam:"Virar de lado",
+ txt:"NUM DADO, OS NÚMEROS DE FACES OPOSTAS SEMPRE SOMAM 7 (O 1 FICA OPOSTO AO 6, POR EXEMPLO). O DADO DA FIGURA ESTÁ SOBRE A MESA. QUANTOS PONTOS TEM A FACE ENCOSTADA NA MESA?",
+ ill:(function(){
+   var x=135,y=70,s=90,d=36, o='<rect x="60" y="160" width="240" height="10" rx="4" fill="#C9A87C"/>';
+   function top(u,v){ return [x+u*s+v*d, y-v*d]; }
+   function dir(u,v){ return [x+s+u*d, y+v*s-u*d]; }
+   o+='<rect x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" fill="#fff" stroke="'+INK+'" stroke-width="2"/>'+
+      '<polygon points="'+x+','+y+' '+(x+d)+','+(y-d)+' '+(x+s+d)+','+(y-d)+' '+(x+s)+','+y+'" fill="#F3EEE4" stroke="'+INK+'" stroke-width="2"/>'+
+      '<polygon points="'+(x+s)+','+y+' '+(x+s+d)+','+(y-d)+' '+(x+s+d)+','+(y+s-d)+' '+(x+s)+','+(y+s)+'" fill="#E4DCCD" stroke="'+INK+'" stroke-width="2"/>';
+   o+='<circle cx="'+(x+s/2)+'" cy="'+(y+s/2)+'" r="8" fill="'+ROSE+'"/>';
+   [[0.25,0.3],[0.75,0.7]].forEach(function(p){ var q=top(p[0],p[1]); o+='<ellipse cx="'+q[0]+'" cy="'+q[1]+'" rx="7" ry="4" fill="'+INK+'"/>'; });
+   [[0.25,0.25],[0.5,0.5],[0.75,0.75]].forEach(function(p){ var q=dir(p[0],p[1]); o+='<ellipse cx="'+q[0]+'" cy="'+q[1]+'" rx="4" ry="7" fill="'+INK+'"/>'; });
+   o+=leg(180,192,"em cima: 2 · na frente: 1 · do lado: 3");
+   return svg("0 0 360 200","Dado mostrando 2 em cima, 1 na frente e 3 do lado",o);})(),
+ opts:["1","3","4","5","6"],ans:3,
+ dica:{0:"O 1 está na frente do dado. A face de baixo é a oposta à de cima.",
+       1:"O 3 está do lado. A face de baixo é a oposta à de CIMA.",
+       2:"O 4 é o oposto do 3, que está do lado. Procure o oposto do número de cima.",
+       4:"O 6 é o oposto do 1, que está na frente. Procure o oposto do número de cima."},
+ resp:"A face encostada na mesa é a oposta à face de cima. Em cima tem 2, e as faces opostas somam 7. Então embaixo tem 7 − 2 = 5 pontos."},
+
+{id:"p3-numeros",fam:"Cada um no seu lugar",
+ txt:"CADA LINHA E CADA COLUNA DO QUADRADO PRECISA TER OS NÚMEROS 1, 2 E 3, SEM REPETIR. QUAL NÚMERO VAI NO LUGAR DA INTERROGAÇÃO?",
+ ill:svg("0 0 360 190","Quadrado 3 por 3 com alguns números",
+   '<g transform="translate(108,18)">'+grade(3,3,48,0,0)+
+   txt(24,33,"2",{s:24,w:800})+txt(120,33,"?",{s:26,w:800,f:GRAPE})+
+   txt(72,81,"3",{s:24,w:800})+txt(120,129,"1",{s:24,w:800})+'</g>'),
+ opts:["1","2","3","NÃO DÁ PARA SABER","PODE SER 1 OU 3"],ans:2,
+ dica:{0:"Veja a coluna da direita: o 1 já está lá embaixo.",
+       1:"O 2 já está na linha de cima, do lado esquerdo.",
+       3:"Dá para saber! Olhe a casa do meio da linha de cima: a coluna dela já tem um 3.",
+       4:"Só um dos dois serve. Olhe a coluna da interrogação: qual número já está nela?"},
+ resp:"Na linha de cima já tem o 2, então a interrogação é 1 ou 3. Na coluna da direita já tem o 1 embaixo, então não pode ser 1. Sobra o 3. (O quadrado completo fica: 2 1 3 / 1 3 2 / 3 2 1.)"},
+
+{id:"p3-balas",fam:"Ter certeza",
+ txt:"NUM POTE HÁ 5 BALAS DE MORANGO, 4 DE UVA E 2 DE LIMÃO. SEM OLHAR, QUAL É O MENOR NÚMERO DE BALAS QUE CAIO PRECISA PEGAR PARA TER CERTEZA DE FICAR COM DUAS BALAS DE SABORES DIFERENTES?",
+ ill:(function(){var o='<path d="M110 40 h140 v10 q15 10 15 30 v70 q0 15 -15 15 h-140 q-15 0 -15 -15 v-70 q0 -20 15 -30 z" fill="#EAF6FC" stroke="'+INK+'" stroke-width="2"/>';
+   var c=[ROSE,GRAPE,ROSE,AMBER,GRAPE,ROSE,GRAPE,ROSE,AMBER,GRAPE,ROSE];
+   c.forEach(function(f,i){ var x=125+(i%4)*36+(Math.floor(i/4)%2)*16, y=85+Math.floor(i/4)*28;
+     o+='<ellipse cx="'+x+'" cy="'+y+'" rx="12" ry="8" fill="'+f+'" stroke="'+INK+'" stroke-width="1"/>'; });
+   o+='<circle cx="60" cy="190" r="6" fill="'+ROSE+'"/>'+txt(72,195,"MORANGO",{s:10,a:"start"})+
+      '<circle cx="160" cy="190" r="6" fill="'+GRAPE+'"/>'+txt(172,195,"UVA",{s:10,a:"start"})+
+      '<circle cx="230" cy="190" r="6" fill="'+AMBER+'"/>'+txt(242,195,"LIMÃO",{s:10,a:"start"});
+   return svg("0 0 360 205","Pote com balas de morango, uva e limão",o);})(),
+ opts:["2","3","6","7","11"],ans:2,
+ dica:{0:"Com azar, as duas podem ser de morango.",
+       1:"Com azar, as três primeiras podem ser todas de morango. Tem 5 de morango!",
+       3:"Quase! Pense no pior azar: quantas balas de UM sabor podem sair seguidas?",
+       4:"Onze é o pote inteiro. Dá para ter certeza com bem menos."},
+ resp:"O pior azar é tirar só balas do sabor que tem mais: as 5 de morango, uma atrás da outra. Aí só sobram uva e limão, e a 6ª bala com certeza é de outro sabor. Então 6 balas garantem."},
+
+{id:"p3-fila",fam:"Não conte duas vezes",
+ txt:"NUMA FILA, ANA É A 5ª PESSOA CONTANDO DA FRENTE E TAMBÉM A 5ª PESSOA CONTANDO DE TRÁS. QUANTAS PESSOAS HÁ NA FILA?",
+ ill:(function(){var o=txt(20,30,"FRENTE",{s:11,a:"start",f:SOFT})+txt(340,30,"TRÁS",{s:11,a:"end",f:SOFT});
+   o+=txt(95,78,"• • •",{s:22,w:800,f:SOFT})+crianca(180,70,GRAPE,"ANA")+txt(265,78,"• • •",{s:22,w:800,f:SOFT});
+   o+='<path d="M30 120 h140" stroke="'+GRAPE+'" stroke-width="2"/><path d="M190 140 h140" stroke="'+AMBER+'" stroke-width="2"/>'+
+      txt(100,115,"ela é a 5ª daqui →",{s:11,f:GRAPE})+txt(260,158,"← e a 5ª daqui",{s:11,f:"#B87615"});
+   return svg("0 0 360 175","Fila com Ana no meio",o);})(),
+ opts:["5","8","9","10","11"],ans:2,
+ dica:{0:"Cinco é a posição da Ana. Tem gente na frente e atrás dela.",
+       1:"Tem gente de menos. Conte: quantas pessoas estão na frente da Ana? E atrás?",
+       3:"Quase! 5 + 5 = 10, mas assim a Ana foi contada duas vezes.",
+       4:"Demais. Na frente da Ana há 4 pessoas e atrás dela há 4."},
+ resp:"Na frente da Ana há 4 pessoas, e atrás dela há mais 4. Contando a Ana: 4 + 1 + 4 = 9 pessoas. Se fizermos 5 + 5 = 10, a Ana é contada duas vezes."},
+
+{id:"p3-regra",fam:"Descubra a regra",
+ txt:"OBSERVE A SEQUÊNCIA DE NÚMEROS: 1, 2, 4, 7, 11, ... QUAL É O PRÓXIMO NÚMERO?",
+ ill:(function(){var o="", n=[1,2,4,7,11];
+   n.forEach(function(v,i){ var x=40+i*62;
+     o+='<circle cx="'+x+'" cy="70" r="22" fill="'+GRAPESOFT+'" stroke="'+GRAPE+'" stroke-width="2"/>'+txt(x,78,v,{s:18,w:800});
+     if(i<4) o+='<path d="M'+(x+8)+' 42 Q'+(x+31)+' 22 '+(x+54)+' 42" stroke="'+SOFT+'" stroke-width="1.5" fill="none"/>'; });
+   o+='<circle cx="350" cy="70" r="22" fill="#fff" stroke="'+GRAPE+'" stroke-width="2" stroke-dasharray="4 3" transform="translate(-10,0)"/>'+txt(340,78,"?",{s:20,w:800,f:GRAPE})+
+      leg(180,130,"quanto cresce de um número para o outro?");
+   return svg("0 0 360 150","Sequência 1, 2, 4, 7, 11",o);})(),
+ opts:["14","15","16","17","22"],ans:2,
+ dica:{0:"Somar 3 foi o que aconteceu lá no começo. Veja quanto cresceu de 7 para 11.",
+       1:"De 7 para 11 cresceu 4. O próximo pulo é um pouco maior.",
+       3:"Um a mais. Os pulos são +1, +2, +3, +4... qual é o próximo?",
+       4:"Vinte e dois é o dobro de 11. Mas a sequência não dobra: de 2 foi para 4, e de 4 foi para 7."},
+ resp:"Os pulos vão aumentando: 1 (+1) 2 (+2) 4 (+3) 7 (+4) 11. O próximo pulo é +5, então 11 + 5 = 16."},
+
+{id:"p3-completar",fam:"Olhe direito",
+ txt:"A FIGURA CINZA É UM PEDAÇO DE UM QUADRADO DE 4 POR 4 QUADRADINHOS. QUANTOS QUADRADINHOS FALTAM PARA COMPLETAR O QUADRADO?",
+ ill:(function(){var o='<g transform="translate(110,15)"><rect x="0" y="0" width="140" height="140" fill="none" stroke="'+SOFT+'" stroke-width="1.5" stroke-dasharray="5 4"/>';
+   var cheias=[[0,0],[1,0],[2,0],[0,1],[1,1],[3,1],[0,2],[2,2],[3,2],[1,3],[2,3]];
+   cheias.forEach(function(p){ o+='<rect x="'+(p[0]*35)+'" y="'+(p[1]*35)+'" width="35" height="35" fill="#D6D1E0" stroke="'+INK+'" stroke-width="1.4"/>'; });
+   o+='</g>'+leg(180,180,"o tracejado mostra o tamanho do quadrado inteiro");
+   return svg("0 0 360 195","Figura cinza incompleta dentro de um quadrado 4 por 4",o);})(),
+ opts:["4","5","6","11","16"],ans:1,
+ dica:{0:"Quase! Olhe linha por linha: quantos buracos tem em cada uma?",
+       2:"Um a mais. Conte os buracos linha por linha com cuidado.",
+       3:"Onze é o número de quadradinhos CINZA. A pergunta é quantos faltam.",
+       4:"Dezesseis é o quadrado inteiro (4 × 4). Parte dele já está pronta."},
+ resp:"O quadrado inteiro tem 4 × 4 = 16 quadradinhos. A figura cinza tem 11. Faltam 16 − 11 = 5. Dá para conferir linha por linha: faltam 1, 1, 1 e 2."},
+
+{id:"p3-cartoes",fam:"Montar direitinho",
+ txt:"PEDRO TEM TRÊS CARTÕES COM OS NÚMEROS 1, 3 E 5. JUNTANDO DOIS CARTÕES DIFERENTES LADO A LADO, ELE FORMA NÚMEROS COMO 13 E 51. QUANTOS NÚMEROS DIFERENTES ELE CONSEGUE FORMAR?",
+ ill:(function(){var o="";
+   ["1","3","5"].forEach(function(t,i){ var x=70+i*85;
+     o+='<rect x="'+x+'" y="35" width="60" height="80" rx="8" fill="#fff" stroke="'+INK+'" stroke-width="2"/>'+txt(x+30,88,t,{s:34,w:800,f:GRAPE}); });
+   o+=leg(180,150,"por exemplo: 1 e 3 formam 13 (e também 31)");
+   return svg("0 0 360 165","Três cartões com os números 1, 3 e 5",o);})(),
+ opts:["3","4","6","8","9"],ans:2,
+ dica:{0:"Três são só os pares de cartões. Mas cada par pode ficar em duas ordens: 13 e 31.",
+       1:"Faltam alguns. Liste todos que começam com 1, depois com 3, depois com 5.",
+       3:"Um pouco demais. Liste com cuidado: começando com 1 são só dois números.",
+       4:"Nove incluiria 11, 33 e 55, mas ele só tem um cartão de cada número."},
+ resp:"Começando com 1: 13 e 15. Começando com 3: 31 e 35. Começando com 5: 51 e 53. São 6 números."},
+
+{id:"p3-pecas",fam:"Ache o diferente",
+ txt:"QUATRO DESTAS PEÇAS SÃO IGUAIS, SÓ QUE GIRADAS. UMA DELAS É DIFERENTE: NÃO DÁ PARA GIRAR NENHUMA DAS OUTRAS E DEIXAR IGUAL A ELA. QUAL É A DIFERENTE?",
+ ill:(function(){var base=[[0,0],[0,1],[0,2],[1,2]], o="";
+   function rot(c){ return c.map(function(p){ return [-p[1],p[0]]; }); }
+   function esp(c){ return c.map(function(p){ return [-p[0],p[1]]; }); }
+   function norm(c){ var mx=Math.min.apply(null,c.map(function(p){return p[0];})), my=Math.min.apply(null,c.map(function(p){return p[1];}));
+     return c.map(function(p){ return [p[0]-mx,p[1]-my]; }); }
+   var r1=rot(base), r2=rot(r1), r3=rot(r2);
+   var pecas=[base, r1, rot(esp(base)), r2, r3];
+   pecas.forEach(function(c,i){ c=norm(c); var cx=22+i*68, cy=40, s=16;
+     c.forEach(function(p){ o+='<rect x="'+(cx+p[0]*s)+'" y="'+(cy+p[1]*s)+'" width="'+s+'" height="'+s+'" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.3"/>'; });
+     o+=txt(cx+16,140,"ABCDE"[i],{s:14,w:800,f:SOFT}); });
+   return svg("0 0 360 160","Cinco peças em forma de L",o);})(),
+ opts:["A","B","C","D","E"],ans:2,
+ dica:{0:"A é a peça em forma de L: o pezinho vai para a direita. Procure a peça em que o pezinho vai para o outro lado.",
+       1:"B é a peça A deitada. Gire A de leve e veja.",
+       3:"D é a peça A de cabeça para baixo.",
+       4:"E é a peça A girada. Procure uma peça que só ficaria igual se você a virasse do avesso, como no espelho."},
+ resp:"A, B, D e E são o mesmo L girado para lados diferentes. A peça C é o L visto no espelho (parece um J). Girando, a gente nunca transforma um L num J: só virando a peça do avesso."},
+
+{id:"p3-lapis",fam:"Troca justa",
+ txt:"UM LÁPIS E UMA BORRACHA CUSTAM JUNTOS 5 REAIS. DOIS LÁPIS E UMA BORRACHA CUSTAM JUNTOS 7 REAIS. QUANTO CUSTA A BORRACHA?",
+ ill:(function(){
+   function lap(x,y){ return '<rect x="'+x+'" y="'+y+'" width="60" height="12" rx="2" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+     '<polygon points="'+(x+60)+','+y+' '+(x+74)+','+(y+6)+' '+(x+60)+','+(y+12)+'" fill="#E8C89A" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   function bor(x,y){ return '<rect x="'+x+'" y="'+(y-6)+'" width="34" height="22" rx="4" fill="#E37B9A" stroke="'+INK+'" stroke-width="1.2"/>'+
+     '<rect x="'+(x+17)+'" y="'+(y-6)+'" width="17" height="22" rx="3" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   var o=lap(30,44)+txt(125,56,"+",{s:18,f:SOFT})+bor(145,44)+txt(270,58,"= R$ 5",{s:16,w:800});
+   o+='<line x1="20" y1="90" x2="340" y2="90" stroke="'+LINE+'" stroke-width="2"/>';
+   o+=lap(30,115)+lap(30,135)+txt(125,136,"+",{s:18,f:SOFT})+bor(145,124)+txt(270,138,"= R$ 7",{s:16,w:800});
+   return svg("0 0 360 170","Lápis e borracha custam 5 reais; dois lápis e borracha custam 7",o);})(),
+ opts:["R$ 1","R$ 2","R$ 3","R$ 5","R$ 7"],ans:2,
+ dica:{0:"Se a borracha custasse 1, o lápis custaria 4, e dois lápis com borracha dariam 9.",
+       1:"Dois reais é o preço do LÁPIS. A pergunta é sobre a borracha.",
+       3:"Cinco é o preço do lápis com a borracha, juntos.",
+       4:"Sete é o preço da segunda compra inteira."},
+ resp:"A segunda compra tem só um lápis a mais que a primeira e custa 7 − 5 = 2 reais a mais. Então o lápis custa 2. Na primeira compra: 5 − 2 = 3. A borracha custa 3 reais."}
+];
+
+/* ---------- PROVA 4 ---------- */
+var Q4=[
+{id:"p4-predio",fam:"Conte os vãos, não os postes",
+ txt:"PARA IR DO TÉRREO ATÉ O 2º ANDAR, LUCAS SOBE 20 DEGRAUS. ENTRE UM ANDAR E O SEGUINTE HÁ SEMPRE O MESMO NÚMERO DE DEGRAUS. QUANTOS DEGRAUS ELE SOBE PARA IR DO TÉRREO ATÉ O 5º ANDAR?",
+ ill:(function(){var o='<rect x="110" y="15" width="120" height="180" fill="#F3EEE4" stroke="'+INK+'" stroke-width="2"/>';
+   var nomes=["TÉRREO","1º","2º","3º","4º","5º"];
+   for(var i=0;i<6;i++){ var y=165-i*30;
+     o+='<line x1="110" y1="'+(y+30)+'" x2="230" y2="'+(y+30)+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+        '<rect x="125" y="'+(y+8)+'" width="16" height="14" fill="#BFE0F2" stroke="'+INK+'" stroke-width="1"/>'+
+        '<rect x="200" y="'+(y+8)+'" width="16" height="14" fill="#BFE0F2" stroke="'+INK+'" stroke-width="1"/>'+
+        txt(245,y+21,nomes[i],{s:11,a:"start",w:700,f:(i===0||i===2||i===5)?INK:SOFT}); }
+   o+='<path d="M95 192 L95 142" stroke="'+GRAPE+'" stroke-width="3" marker-end="url(#fl4)"/>'+
+      '<defs><marker id="fl4" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="'+GRAPE+'"/></marker></defs>'+
+      txt(85,155,"20",{s:14,a:"end",w:800,f:GRAPE})+txt(85,170,"degraus",{s:10,a:"end",f:GRAPE});
+   return svg("0 0 360 210","Prédio com térreo e cinco andares",o);})(),
+ opts:["25","40","50","60","100"],ans:2,
+ dica:{0:"Vinte e cinco seria contar 5 degraus por andar. Veja quantos andares ele subiu para chegar ao 2º.",
+       1:"Quarenta seria se de um andar para o outro houvesse 20 degraus. Mas do térreo ao 2º ele passou por dois lances de escada.",
+       3:"Sessenta seria com 20 degraus por andar e 3 andares. Descubra primeiro os degraus entre um andar e o seguinte.",
+       4:"Cem seria 20 degraus para cada um dos 5 andares. Mas 20 degraus levam do térreo até o 2º, não até o 1º."},
+ resp:"Do térreo ao 2º andar são dois lances de escada (térreo→1º e 1º→2º). Então cada lance tem 20 ÷ 2 = 10 degraus. Do térreo ao 5º andar são 5 lances: 5 × 10 = 50 degraus."},
+
+{id:"p4-picole",fam:"Troca justa",
+ txt:"TRÊS PICOLÉS CUSTAM O MESMO QUE DOIS SORVETES DE CASQUINHA. CADA SORVETE CUSTA 6 REAIS. QUANTO CUSTA UM PICOLÉ?",
+ ill:(function(){
+   function pic(x){ return '<rect x="'+x+'" y="40" width="26" height="46" rx="12" fill="'+ROSE+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+     '<rect x="'+(x+10)+'" y="86" width="6" height="20" fill="#C9A87C" stroke="'+INK+'" stroke-width="1"/>'; }
+   function cas(x){ return '<circle cx="'+(x+15)+'" cy="52" r="15" fill="#F5E0A8" stroke="'+INK+'" stroke-width="1.2"/>'+
+     '<polygon points="'+x+',60 '+(x+30)+',60 '+(x+15)+',106" fill="#D9A45E" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   var o=pic(30)+pic(66)+pic(102)+txt(165,80,"=",{s:26,w:800,f:SOFT})+cas(200)+cas(250)+
+     txt(215,130,"R$ 6",{s:12,w:700})+txt(265,130,"R$ 6",{s:12,w:700})+leg(180,158,"3 picolés custam o mesmo que 2 sorvetes");
+   return svg("0 0 360 170","Três picolés valem dois sorvetes",o);})(),
+ opts:["R$ 2","R$ 3","R$ 4","R$ 6","R$ 9"],ans:2,
+ dica:{0:"Se o picolé custasse 2, três picolés custariam só 6 reais. Os dois sorvetes custam mais que isso.",
+       1:"Três picolés a 3 reais dão 9 reais. Mas os dois sorvetes custam quanto juntos?",
+       3:"Seis é o preço do SORVETE. O picolé é mais barato, porque precisa de 3 picolés para valer 2 sorvetes.",
+       4:"Nove não dá: três picolés custariam 27 reais."},
+ resp:"Dois sorvetes custam 6 + 6 = 12 reais. Então três picolés também custam 12 reais, e cada picolé custa 12 ÷ 3 = 4 reais (4 + 4 + 4 = 12)."},
+
+{id:"p4-recorte",fam:"Virar de lado",
+ txt:"CLARA DOBROU UMA FOLHA AO MEIO E RECORTOU UM TRIÂNGULO ENCOSTADO NA DOBRA, COMO NA FIGURA. COMO FICA A FOLHA QUANDO ELA ABRIR?",
+ ill:svg("0 0 360 180","Folha dobrada ao meio com um triângulo recortado na dobra",
+   '<rect x="110" y="25" width="120" height="120" fill="#fff" stroke="'+INK+'" stroke-width="2"/>'+
+   '<line x1="110" y1="25" x2="110" y2="145" stroke="'+GRAPE+'" stroke-width="4"/>'+
+   '<polygon points="110,60 110,110 160,85" fill="'+INK+'"/>'+
+   txt(100,90,"dobra",{s:12,a:"end",w:700,f:GRAPE})+leg(170,170,"o triângulo preto foi recortado")),
+ opts:["um triângulo só de um lado","um losango no meio","dois triângulos separados","um triângulo no meio","um quadrado no meio"],
+ optsIll:[recorte(["105,26 105,62 135,44"]),recorte(["100,20 130,40 100,60 70,40"]),
+          recorte(["130,25 130,55 155,40","70,25 70,55 45,40"]),recorte(["85,20 85,60 115,40"]),
+          recorte(["85,25 115,25 115,55 85,55"])],
+ ans:1,
+ dica:{0:"A folha estava dobrada: a tesoura cortou as DUAS metades de uma vez.",
+       2:"Os dois triângulos ficam grudados um no outro, porque o recorte encosta na dobra.",
+       3:"O recorte passa para os dois lados da dobra, então o buraco fica maior que um triângulo.",
+       4:"Os lados do buraco são tortos, como o triângulo. Não dá para formar um quadrado."},
+ resp:"A tesoura cortou as duas metades da folha ao mesmo tempo. Ao abrir, aparece um triângulo de cada lado da dobra, um virado para a direita e outro para a esquerda, grudados pela base. Juntos eles formam um losango."},
+
+{id:"p4-cores",fam:"Cada um no seu lugar",
+ txt:"ANA, BIA E CAIO TÊM CADA UM UMA COR PREFERIDA DIFERENTE: AZUL, VERDE OU AMARELO. ANA NÃO GOSTA DE AZUL NEM DE VERDE. BIA NÃO GOSTA DE AZUL. QUAL É A COR PREFERIDA DE CAIO?",
+ ill:(function(){var o="", n=["ANA","BIA","CAIO"];
+   n.forEach(function(t,i){ var x=90+i*90; o+=crianca(x,70,"#C4BFD4",t)+'<circle cx="'+x+'" cy="130" r="14" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/>'+txt(x,136,"?",{s:16,w:800,f:GRAPE}); });
+   o+='<circle cx="120" cy="175" r="9" fill="'+SKY+'" stroke="'+INK+'"/><circle cx="180" cy="175" r="9" fill="'+LEAF+'" stroke="'+INK+'"/><circle cx="240" cy="175" r="9" fill="#F2D06B" stroke="'+INK+'"/>';
+   return svg("0 0 360 195","Três crianças e três cores",o);})(),
+ opts:["AZUL","VERDE","AMARELO","NÃO DÁ PARA SABER"],ans:0,
+ dica:{1:"Verde é a cor da Bia. Descubra primeiro a da Ana.",
+       2:"Amarelo é a cor da Ana: ela não gosta de azul nem de verde.",
+       3:"Dá para saber sim! Comece pela Ana: se não é azul nem verde, qual é?"},
+ resp:"A Ana não gosta de azul nem de verde, então a dela é amarelo. A Bia não gosta de azul e o amarelo já é da Ana, então a dela é verde. Sobra o azul para o Caio."},
+
+{id:"p4-balas",fam:"Ter certeza",
+ txt:"NUM SACO HÁ 10 BALAS DE MORANGO E 10 BALAS DE UVA. SEM OLHAR, QUAL É O MENOR NÚMERO DE BALAS QUE DUDA PRECISA PEGAR PARA TER CERTEZA DE FICAR COM 3 BALAS DO MESMO SABOR?",
+ ill:(function(){var o='<path d="M120 50 q60 -30 120 0 l20 110 q-80 25 -160 0 z" fill="#E9DCC6" stroke="'+INK+'" stroke-width="2"/>';
+   for(var i=0;i<12;i++){ var x=140+(i%4)*27, y=80+Math.floor(i/4)*26;
+     o+='<ellipse cx="'+x+'" cy="'+y+'" rx="11" ry="7" fill="'+(i%3===1?GRAPE:ROSE)+'" stroke="'+INK+'" stroke-width="1"/>'; }
+   o+='<circle cx="120" cy="190" r="6" fill="'+ROSE+'"/>'+txt(132,195,"MORANGO: 10",{s:10,a:"start"})+
+      '<circle cx="230" cy="190" r="6" fill="'+GRAPE+'"/>'+txt(242,195,"UVA: 10",{s:10,a:"start"});
+   return svg("0 0 360 205","Saco com balas de morango e de uva",o);})(),
+ opts:["3","4","5","6","11"],ans:2,
+ dica:{0:"Com azar, podem vir duas de um sabor e uma do outro.",
+       1:"Com azar, podem vir duas de morango e duas de uva. Ainda não tem três iguais.",
+       3:"Dá para garantir com uma a menos. Pense: o pior azar é 2 de cada sabor.",
+       4:"Onze garante 3 iguais, mas é muito mais do que precisa."},
+ resp:"O pior azar é pegar 2 de morango e 2 de uva: são 4 balas sem ter 3 iguais. A 5ª bala é de morango ou de uva, e qualquer uma delas completa 3 do mesmo sabor. Então 5 balas garantem."},
+
+{id:"p4-uns",fam:"Não conte duas vezes",
+ txt:"LUÍSA ESCREVEU OS NÚMEROS DE 1 ATÉ 20. QUANTOS DESSES NÚMEROS TÊM PELO MENOS UM ALGARISMO 1?",
+ ill:(function(){var o="";
+   for(var i=0;i<20;i++){ var x=40+(i%10)*31, y=55+Math.floor(i/10)*50;
+     o+='<rect x="'+(x-14)+'" y="'+(y-22)+'" width="28" height="32" rx="5" fill="#fff" stroke="'+LINE+'" stroke-width="1.5"/>'+txt(x,y,i+1,{s:14,w:600}); }
+   o+=leg(180,150,"o 11 tem dois algarismos 1, mas é um número só");
+   return svg("0 0 360 165","Números de 1 a 20",o);})(),
+ opts:["2","10","11","12","20"],ans:2,
+ dica:{0:"Tem muito mais que dois! Olhe a segunda fileira: 10, 11, 12...",
+       1:"Faltou um. Não esqueça do número 1 lá no começo.",
+       3:"Um a mais. O 11 tem dois algarismos 1, mas é um número só: conte ele uma vez.",
+       4:"Nem todos têm o algarismo 1. Por exemplo, o 5 não tem."},
+ resp:"Os números com algarismo 1 são: o 1, e depois 10, 11, 12, 13, 14, 15, 16, 17, 18 e 19. Isso dá 1 + 10 = 11 números. O 11 tem dois algarismos 1, mas conta como um número só."},
+
+{id:"p4-palitos",fam:"Descubra a regra",
+ txt:"COM PALITOS DE FÓSFORO, DUDA FAZ QUADRADINHOS EM FILA. PARA 1 QUADRADINHO ELA USA 4 PALITOS, PARA 2 USA 7 E PARA 3 USA 10. QUANTOS PALITOS ELA PRECISA PARA FAZER 5 QUADRADINHOS EM FILA?",
+ ill:(function(){var o="";
+   function pal(x1,y1,x2,y2){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#C98F4E" stroke-width="4" stroke-linecap="round"/>'+
+     '<circle cx="'+x2+'" cy="'+y2+'" r="3.2" fill="'+ROSE+'"/>'; }
+   function fila(ox,oy,n){ var s=26, g="";
+     for(var i=0;i<n;i++){ g+=pal(ox+i*s+3,oy,ox+(i+1)*s-3,oy)+pal(ox+i*s+3,oy+s,ox+(i+1)*s-3,oy+s); }
+     for(var j=0;j<=n;j++){ g+=pal(ox+j*s,oy+s-3,ox+j*s,oy+3); }
+     return g; }
+   o+=fila(20,50,1)+txt(33,110,"4",{s:14,w:800})+fila(85,50,2)+txt(111,110,"7",{s:14,w:800})+fila(180,50,3)+txt(219,110,"10",{s:14,w:800})+
+      txt(310,72,"?",{s:26,w:800,f:GRAPE})+txt(310,110,"5 quadradinhos",{s:10,f:SOFT});
+   return svg("0 0 360 135","Quadradinhos de palitos em fila: 1, 2 e 3",o);})(),
+ opts:["13","15","16","19","20"],ans:2,
+ dica:{0:"Treze são os palitos de 4 quadradinhos. Falta mais um quadradinho.",
+       1:"Quase! 5 × 3 = 15, mas o primeiro quadradinho precisa de 4 palitos, não 3.",
+       3:"Dezenove seria para 6 quadradinhos. Conte de novo: 4, 7, 10, ...",
+       4:"Vinte é 5 × 4. Mas quadradinhos vizinhos dividem um palito, então não precisa de 4 palitos para cada um."},
+ resp:"Cada quadradinho novo aproveita um palito do anterior e precisa só de mais 3 palitos: 4, 7, 10, 13, 16. Então 5 quadradinhos precisam de 16 palitos."},
+
+{id:"p4-retangulos",fam:"Olhe direito",
+ txt:"UMA TIRA DE PAPEL FOI DIVIDIDA EM 3 QUADRADINHOS. QUANTOS RETÂNGULOS EXISTEM NA FIGURA? (UM QUADRADO TAMBÉM CONTA COMO RETÂNGULO.)",
+ ill:svg("0 0 360 150","Tira dividida em três quadradinhos",
+   '<g transform="translate(60,35)">'+grade(3,1,80,0,0,function(){return "#FFF1D6";})+'</g>'+
+   leg(180,140,"retângulos podem ser formados por 1, 2 ou 3 quadradinhos")),
+ opts:["3","4","5","6","7"],ans:3,
+ dica:{0:"Você contou só os quadradinhos. Juntando pedacinhos vizinhos também formam retângulos.",
+       1:"Faltam alguns. Conte os de 1 pedacinho, os de 2 pedacinhos e os de 3.",
+       2:"Quase! Quantos retângulos de 2 pedacinhos existem? Tem o da esquerda e o da direita.",
+       4:"Um a mais. Confira: 3 de um pedacinho, 2 de dois pedacinhos, 1 de três."},
+ resp:"Com 1 quadradinho: 3 retângulos. Com 2 quadradinhos vizinhos: 2 (esquerda+meio e meio+direita). Com os 3 juntos: 1, que é a tira inteira. Total: 3 + 2 + 1 = 6."},
+
+{id:"p4-sorvete",fam:"Montar direitinho",
+ txt:"A SORVETERIA TEM 4 SABORES: MORANGO, CHOCOLATE, CREME E MENTA. RITA VAI PEDIR UMA CASQUINHA COM 2 BOLAS DE SABORES DIFERENTES. QUANTAS ESCOLHAS DIFERENTES ELA PODE FAZER? (MORANGO E CHOCOLATE É O MESMO QUE CHOCOLATE E MORANGO.)",
+ ill:(function(){var o="", s=[["MORANGO","#F2A0B4"],["CHOCOLATE","#8A5A3B"],["CREME","#F5E0A8"],["MENTA","#9FE0C8"]];
+   s.forEach(function(p,i){ var x=60+i*80;
+     o+='<rect x="'+(x-30)+'" y="50" width="60" height="48" rx="8" fill="#fff" stroke="'+LINE+'" stroke-width="2"/>'+
+        '<circle cx="'+x+'" cy="74" r="17" fill="'+p[1]+'" stroke="'+INK+'" stroke-width="1.2"/>'+txt(x,118,p[0],{s:10,w:700}); });
+   o+=leg(180,150,"duas bolas de sabores diferentes");
+   return svg("0 0 360 165","Quatro sabores de sorvete",o);})(),
+ opts:["4","6","8","12","16"],ans:1,
+ dica:{0:"Quatro é o número de sabores. Com morango sozinho já dá para montar três duplas diferentes.",
+       2:"Liste com cuidado: morango com cada um dos outros, depois chocolate com os que faltam...",
+       3:"Doze conta cada dupla duas vezes: morango+chocolate e chocolate+morango são a mesma escolha.",
+       4:"Dezesseis incluiria duas bolas iguais e duplas repetidas. Os sabores têm que ser diferentes."},
+ resp:"Morango com: chocolate, creme, menta (3). Chocolate com: creme, menta (2, porque com morango já foi). Creme com: menta (1). Total: 3 + 2 + 1 = 6 escolhas."},
+
+{id:"p4-dominos",fam:"Ache o diferente",
+ txt:"EM QUATRO DESTAS PEÇAS DE DOMINÓ, A SOMA DE TODOS OS PONTINHOS É 7. EM QUAL PEÇA A SOMA É DIFERENTE?",
+ ill:(function(){var o="", p=[[3,4],[5,2],[2,4],[6,1],[4,3]];
+   p.forEach(function(d,i){ var x=22+i*67, y=30;
+     o+='<rect x="'+x+'" y="'+y+'" width="52" height="100" rx="7" fill="#fff" stroke="'+INK+'" stroke-width="2"/>'+
+        '<line x1="'+(x+6)+'" y1="'+(y+50)+'" x2="'+(x+46)+'" y2="'+(y+50)+'" stroke="'+INK+'" stroke-width="1.5"/>'+
+        pontos(x+26,y+25,d[0],44)+pontos(x+26,y+75,d[1],44)+txt(x+26,y+122,"ABCDE"[i],{s:14,w:800,f:SOFT}); });
+   return svg("0 0 360 165","Cinco peças de dominó",o);})(),
+ opts:["A","B","C","D","E"],ans:2,
+ dica:{0:"Conte: 3 em cima e 4 embaixo. 3 + 4 = 7.",
+       1:"Conte: 5 em cima e 2 embaixo. 5 + 2 = 7.",
+       3:"Conte: 6 em cima e 1 embaixo. 6 + 1 = 7.",
+       4:"Conte: 4 em cima e 3 embaixo. 4 + 3 = 7."},
+ resp:"A: 3 + 4 = 7. B: 5 + 2 = 7. D: 6 + 1 = 7. E: 4 + 3 = 7. Só a peça C é diferente: 2 + 4 = 6."},
+
+{id:"p4-dias",fam:"Conte os vãos, não os postes",
+ txt:"ONTEM FOI SÁBADO. QUE DIA DA SEMANA SERÁ DEPOIS DE AMANHÃ?",
+ ill:(function(){var o="", d=["DOM","SEG","TER","QUA","QUI","SEX","SÁB"];
+   d.forEach(function(t,i){ var x=15+i*48, hi=(i===6);
+     o+='<rect x="'+x+'" y="55" width="42" height="42" rx="8" fill="'+(hi?GRAPESOFT:"#fff")+'" stroke="'+(hi?GRAPE:LINE)+'" stroke-width="'+(hi?2.5:1.5)+'"/>'+txt(x+21,81,t,{s:11,w:700}); });
+   o+=txt(330,125,"ontem",{s:12,w:700,f:GRAPE})+leg(180,160,"depois do sábado a semana recomeça no domingo");
+   return svg("0 0 360 175","Dias da semana com sábado marcado como ontem",o);})(),
+ opts:["SEGUNDA-FEIRA","TERÇA-FEIRA","QUARTA-FEIRA","SEXTA-FEIRA","DOMINGO"],ans:1,
+ dica:{0:"Segunda-feira é AMANHÃ. A pergunta é sobre DEPOIS de amanhã.",
+       2:"Um dia a mais. Descubra primeiro que dia é hoje.",
+       3:"Sexta vem antes do sábado. Depois do sábado a semana recomeça.",
+       4:"Domingo é HOJE, o dia depois de ontem (sábado)."},
+ resp:"Se ontem foi sábado, hoje é domingo. Amanhã é segunda-feira. Depois de amanhã é terça-feira."},
+
+{id:"p4-dobro",fam:"Troca justa",
+ txt:"GABRIEL TEM O DOBRO DE FIGURINHAS DE RAFA. JUNTOS ELES TÊM 18 FIGURINHAS. QUANTAS FIGURINHAS RAFA TEM?",
+ ill:svg("0 0 360 170","Barras: Rafa uma parte, Gabriel duas partes",
+   txt(20,48,"RAFA",{s:13,a:"start",w:700})+
+   '<rect x="100" y="30" width="70" height="26" rx="5" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.5"/>'+
+   txt(20,98,"GABRIEL",{s:13,a:"start",w:700})+
+   '<rect x="100" y="80" width="70" height="26" rx="5" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.5"/>'+
+   '<rect x="170" y="80" width="70" height="26" rx="5" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.5"/>'+
+   leg(180,140,"todas as barras azuis são do mesmo tamanho")+leg(180,158,"tudo junto dá 18 figurinhas")),
+ opts:["3","6","9","12","18"],ans:1,
+ dica:{0:"Se a Rafa tivesse 3, o Gabriel teria 6, e juntos só 9.",
+       2:"Nove é metade de 18. Mas eles não têm a mesma quantidade: o Gabriel tem o dobro.",
+       3:"Doze é quanto o GABRIEL tem. A pergunta é sobre a Rafa.",
+       4:"Dezoito é o total dos dois juntos."},
+ resp:"Olhe as barras: ao todo são 3 barras iguais (uma da Rafa e duas do Gabriel). 18 dividido em 3 partes iguais dá 6. Então a Rafa tem 6 e o Gabriel tem 12 (6 + 12 = 18)."}
+];
+
+var PROVAS=[
+  {id:"p1",nome:"Prova 1",qs:Q},
+  {id:"p2",nome:"Prova 2",qs:Q2},
+  {id:"p3",nome:"Prova 3",qs:Q3},
+  {id:"p4",nome:"Prova 4",qs:Q4}
+];
+
+/* ---------- estado ----------
+   v1 ("treino-mirim-v1") guardava só a prova 1: {feitas, estrelas:{id:0|1|2}}.
+   v2 guarda todas as provas. Na primeira abertura, copiamos a v1 para a prova 1
+   (marcada como feita) e deixamos a chave antiga intacta como cópia de segurança.
+   "estrelas" guarda o MELHOR resultado de cada questão: refazer nunca tira estrela. */
+var CHAVE_V1="treino-mirim-v1", CHAVE="treino-mirim-v2";
+function ler(k){ try{ var r=localStorage.getItem(k); return r?JSON.parse(r):null; }catch(e){ return null; } }
 function salvar(p){ try{ localStorage.setItem(CHAVE,JSON.stringify(p)); }catch(e){} }
+function carregar(){
+  var d=ler(CHAVE);
+  if(!d||!d.provas){
+    var v1=ler(CHAVE_V1)||{}, est=v1.estrelas||{}, copia={};
+    for(var k in est) copia[k]=est[k];
+    d={provas:{p1:{feitas:Q.length,estrelas:est,rodada:copia}}};
+    salvar(d);
+  }
+  PROVAS.forEach(function(p){
+    var e=d.provas[p.id];
+    if(!e) e=d.provas[p.id]={feitas:0,estrelas:{},rodada:{}};
+    if(!e.estrelas) e.estrelas={};
+    if(!e.rodada) e.rodada={};
+  });
+  return d;
+}
 
-var prog=carregar(), escolha=null, erradas=[], fase="responder";
+var prog=carregar(), atual=null, escolha=null, erradas=[], fase="responder";
 
-function estrelasTotal(){ var s=0; for(var k in prog.estrelas) s+=prog.estrelas[k]; return s; }
+function somar(o){ var s=0; for(var k in o) s+=o[k]; return s; }
+function estrelasTotal(){ var s=0; PROVAS.forEach(function(p){ s+=somar(prog.provas[p.id].estrelas); }); return s; }
+function estado(p){ return prog.provas[p.id]; }
 
 function responder(k){
   if(fase==="pronto"||erradas.indexOf(k)>=0) return;
-  var q=Q[prog.feitas];
-  if(k===q.ans){ escolha=k; fase="pronto"; prog.estrelas[q.id]=erradas.length===0?2:1; }
+  var e=estado(atual), q=atual.qs[e.feitas], ganho=null;
+  if(k===q.ans){ escolha=k; fase="pronto"; ganho=erradas.length===0?2:1; }
   else if(erradas.length===0){ escolha=k; erradas.push(k); fase="dica"; }
-  else { escolha=k; erradas.push(k); fase="pronto"; prog.estrelas[q.id]=0; }
+  else { escolha=k; erradas.push(k); fase="pronto"; ganho=0; }
+  if(ganho!==null){
+    e.rodada[q.id]=ganho;
+    e.estrelas[q.id]=Math.max(e.estrelas[q.id]||0,ganho);
+    salvar(prog);
+  }
   render();
 }
+function limpar(){ escolha=null; erradas=[]; fase="responder"; }
 function tentarDeNovo(){ escolha=null; fase="responder"; render(); }
-function avancar(){ prog.feitas++; salvar(prog); escolha=null; erradas=[]; fase="responder"; render(); }
-function recomecar(){ prog={feitas:0,estrelas:{}}; salvar(prog); escolha=null; erradas=[]; fase="responder"; render(); }
+function avancar(){ estado(atual).feitas++; salvar(prog); limpar(); render(); }
+function abrir(id){ atual=PROVAS.filter(function(p){return p.id===id;})[0]; limpar(); render(); }
+function voltar(){ atual=null; limpar(); render(); }
+function refazer(){ var e=estado(atual); e.feitas=0; e.rodada={}; salvar(prog); limpar(); render(); }
 
 /* ---------- render ---------- */
+function telaProvas(app){
+  var h='<header><div class="topo"><div>'+
+    '<div class="rotulo">TREINO DE MATEMÁTICA</div>'+
+    '<div class="contador">Provas</div></div>'+
+    '<div class="estrelas">⭐ '+estrelasTotal()+'</div></div></header><div class="provas">';
+  PROVAS.forEach(function(p){
+    var e=estado(p), n=p.qs.length, feita=e.feitas>=n, est=somar(e.estrelas), chip, cls;
+    if(feita){ chip="✓ FEITA"; cls="feita"; }
+    else if(e.feitas>0){ chip="QUESTÃO "+(e.feitas+1)+" DE "+n; cls="andamento"; }
+    else { chip="NOVA"; cls="nova"; }
+    h+='<button class="prova '+cls+'" data-p="'+p.id+'">'+
+       '<div class="pnome">'+p.nome+'</div>'+
+       '<div class="pinfo">'+n+' questões</div>'+
+       '<div class="pbarra"><div style="width:'+(Math.min(e.feitas,n)/n*100)+'%"></div></div>'+
+       '<div class="prodape"><span class="chip">'+chip+'</span><span class="pest">⭐ '+est+' de '+(n*2)+'</span></div>'+
+       '</button>';
+  });
+  h+='</div>';
+  app.innerHTML=h;
+  Array.prototype.forEach.call(app.querySelectorAll(".prova"),function(b){
+    b.onclick=function(){ abrir(b.getAttribute("data-p")); };
+  });
+  window.scrollTo(0,0);
+}
+
 function render(){
-  var app=document.getElementById("app"), total=Q.length, idx=prog.feitas;
+  var app=document.getElementById("app");
+  if(!atual){ telaProvas(app); return; }
+  var Qs=atual.qs, e=estado(atual), total=Qs.length, idx=e.feitas;
+  var voltarBtn='<button class="voltar" id="voltar">‹ PROVAS</button>';
+
   if(idx>=total){
-    app.innerHTML='<div class="final"><h2>Você terminou todas as '+total+' questões! 🎉</h2>'+
-      '<p>Estrelas conquistadas: <b>'+estrelasTotal()+'</b> de '+(total*2)+'.</p>'+
-      '<button class="btn" id="reinicio">COMEÇAR DE NOVO</button></div>';
-    document.getElementById("reinicio").onclick=recomecar;
+    var rod=somar(e.rodada), rec=somar(e.estrelas);
+    app.innerHTML=voltarBtn+'<div class="final"><h2>'+atual.nome+' feita! 🎉</h2>'+
+      '<p>Estrelas nesta prova: <b>'+rec+'</b> de '+(total*2)+'.</p>'+
+      (rod<rec?'<p class="obs">Na última vez que você fez: '+rod+'. Fica valendo o seu melhor em cada questão.</p>':'')+
+      '<div class="botoes"><button class="btn" id="outras">VER AS PROVAS</button>'+
+      '<button class="btn sec" id="refazer">FAZER DE NOVO</button></div>'+
+      '<p class="obs">Fazer de novo não apaga nenhuma estrela.</p></div>';
+    document.getElementById("outras").onclick=voltar;
+    document.getElementById("voltar").onclick=voltar;
+    document.getElementById("refazer").onclick=refazer;
     window.scrollTo(0,0); return;
   }
-  var q=Q[idx], certa=(fase==="pronto"&&escolha===q.ans), h="";
+  var q=Qs[idx], certa=(fase==="pronto"&&escolha===q.ans), h=voltarBtn;
 
   h+='<header><div class="topo"><div>'+
-     '<div class="rotulo">TREINO DE MATEMÁTICA</div>'+
+     '<div class="rotulo">'+atual.nome.toUpperCase()+'</div>'+
      '<div class="contador">Questão '+(idx+1)+' <span>de '+total+'</span></div></div>'+
      '<div class="estrelas">⭐ '+estrelasTotal()+'</div></div>'+
      '<div class="barra"><div style="width:'+((idx/total)*100)+'%"></div></div></header>';
@@ -569,6 +1253,7 @@ function render(){
   Array.prototype.forEach.call(app.querySelectorAll(".op"),function(b){
     b.onclick=function(){ responder(+b.getAttribute("data-k")); };
   });
+  document.getElementById("voltar").onclick=voltar;
   var d=document.getElementById("denovo"); if(d) d.onclick=tentarDeNovo;
   var p=document.getElementById("proxima"); if(p) p.onclick=avancar;
 }
