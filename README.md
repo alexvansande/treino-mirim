@@ -1,6 +1,6 @@
 # Treino de Matemática — Olimpíada Mirim
 
-App de treino com 4 provas (57 questões ilustradas) no formato da 2ª fase da Olimpíada Mirim
+App de treino com 7 provas (93 questões ilustradas) no formato da 2ª fase da Olimpíada Mirim
 (OBMEP, Nível 1 — 2º e 3º anos do fundamental).
 
 - Arquivo único, sem dependências externas e sem chamadas de rede.

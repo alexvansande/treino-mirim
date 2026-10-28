@@ -1108,11 +1108,617 @@ var Q4=[
  resp:"Olhe as barras: ao todo são 3 barras iguais (uma da Rafa e duas do Gabriel). 18 dividido em 3 partes iguais dá 6. Então a Rafa tem 6 e o Gabriel tem 12 (6 + 12 = 18)."}
 ];
 
+/* ---------- peças extras para as provas 5, 6 e 7 ---------- */
+function seta(x,y,dir,f){ /* seta pequena: dir = "cima","baixo","esq","dir" */
+  var r={cima:-90,baixo:90,esq:180,dir:0}[dir]||0;
+  return '<g transform="translate('+x+','+y+') rotate('+r+')"><path d="M-14 0 h18 M-2 -9 l12 9 l-12 9" stroke="'+(f||INK)+'" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>';
+}
+function cartaoSeta(cantoEstrela,dirSeta){ /* quadrado com estrela num canto e seta no meio (miniatura) */
+  var P={TL:[22,22],TR:[78,22],BR:[78,78],BL:[22,78]}[cantoEstrela];
+  return '<svg viewBox="0 0 100 100" style="max-width:90px"><rect x="4" y="4" width="92" height="92" rx="8" fill="#FFF8E8" stroke="'+INK+'" stroke-width="2"/>'+
+    estrela(P[0],P[1],11)+seta(50,55,dirSeta,GRAPE)+'</svg>';
+}
+function cantoCortado(cut,dot){ /* quadrado com um canto cortado e um pontinho noutro canto */
+  var pts={TL:"4,4",TR:"96,4",BR:"96,96",BL:"4,96"}, cortes={TL:"4,30 30,4",TR:"70,4 96,30",BR:"96,70 70,96",BL:"30,96 4,70"};
+  var ordem=["TL","TR","BR","BL"], poly=ordem.map(function(c){ return c===cut?cortes[c]:pts[c]; }).join(" ");
+  var D={TL:[24,24],TR:[76,24],BR:[76,76],BL:[24,76]}[dot];
+  return '<polygon points="'+poly+'" fill="#DDE9F7" stroke="'+INK+'" stroke-width="2.2" stroke-linejoin="round"/>'+
+    '<circle cx="'+D[0]+'" cy="'+D[1]+'" r="7" fill="'+ROSE+'" stroke="'+INK+'" stroke-width="1.2"/>';
+}
+function miniCanto(cut,dot){ return '<svg viewBox="0 0 100 100" style="max-width:80px">'+cantoCortado(cut,dot)+'</svg>'; }
+function quadroCores(ordem){ /* 2x2 com três cores e uma casa vazia; ordem = [TL,TR,BR,BL] */
+  var P=[[4,4],[48,4],[48,48],[4,48]], o='';
+  for(var i=0;i<4;i++) o+='<rect x="'+P[i][0]+'" y="'+P[i][1]+'" width="44" height="44" fill="'+(ordem[i]||"#fff")+'" stroke="'+INK+'" stroke-width="1.6"/>';
+  return o;
+}
+function placaTexto(letras,espelha,dir){ /* placa com letras; espelha=true espelha cada letra; dir=-1 inverte a ordem */
+  var o='<svg viewBox="0 0 200 70" style="max-width:200px"><rect x="4" y="8" width="192" height="54" rx="8" fill="#FFF8E8" stroke="'+INK+'" stroke-width="2"/>';
+  var ls=letras.split(""); if(dir===-1) ls.reverse();
+  ls.forEach(function(l,i){ var x=50+i*50;
+    o+='<g transform="translate('+x+',47)'+(espelha?' scale(-1,1)':'')+'">'+txt(0,0,l,{s:30,w:800,f:GRAPE})+'</g>'; });
+  return o+'</svg>';
+}
+function barras(dados,escala,max){ /* gráfico de barras simples: dados=[[nome,valor,cor]] */
+  var o='', bx=70, by=20, h=130, w=260, n=dados.length;
+  for(var v=0;v<=max;v+=escala){ var y=by+h-v/max*h;
+    o+='<line x1="'+bx+'" y1="'+y+'" x2="'+(bx+w)+'" y2="'+y+'" stroke="'+LINE+'" stroke-width="1.5"/>'+txt(bx-8,y+4,v,{s:11,a:"end",f:SOFT}); }
+  dados.forEach(function(d,i){ var cw=w/n, x=bx+i*cw+cw*0.25, bh=d[1]/max*h;
+    o+='<rect x="'+x+'" y="'+(by+h-bh)+'" width="'+(cw*0.5)+'" height="'+bh+'" rx="4" fill="'+d[2]+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+       txt(x+cw*0.25,by+h+18,d[0],{s:11,w:700}); });
+  o+='<line x1="'+bx+'" y1="'+(by+h)+'" x2="'+(bx+w)+'" y2="'+(by+h)+'" stroke="'+INK+'" stroke-width="2"/>';
+  return o;
+}
+function planificacao(cx,cy,s,faces){ /* cruz: faces = {c:centro, cima, baixo, esq, dir, dir2} desenhadas por funções (x,y)->svg */
+  var pos={esq:[-1,0],c:[0,0],dir:[1,0],dir2:[2,0],cima:[0,-1],baixo:[0,1]}, o='';
+  for(var k in pos){ if(!faces[k]) continue; var x=cx+pos[k][0]*s, y=cy+pos[k][1]*s;
+    o+='<rect x="'+(x-s/2)+'" y="'+(y-s/2)+'" width="'+s+'" height="'+s+'" fill="#fff" stroke="'+INK+'" stroke-width="1.6"/>'+faces[k](x,y); }
+  return o;
+}
+function relogioMini(cx,cy,r,h,m){ /* relógio sem números, só marcas */
+  var o='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="#fff" stroke="'+INK+'" stroke-width="2.5"/>';
+  for(var i=0;i<12;i++){ var a=Math.PI/6*i, L=(i%3===0)?6:3;
+    o+='<line x1="'+(cx+(r-2)*Math.cos(a)).toFixed(1)+'" y1="'+(cy+(r-2)*Math.sin(a)).toFixed(1)+'" x2="'+(cx+(r-2-L)*Math.cos(a)).toFixed(1)+'" y2="'+(cy+(r-2-L)*Math.sin(a)).toFixed(1)+'" stroke="'+INK+'" stroke-width="'+(i%3===0?2:1.2)+'"/>'; }
+  o+=txt(cx,cy-r+17,"12",{s:9,w:700})+txt(cx+r-14,cy+3,"3",{s:9,w:700})+txt(cx,cy+r-10,"6",{s:9,w:700})+txt(cx-r+14,cy+3,"9",{s:9,w:700});
+  var ah=Math.PI/6*(h+m/60)-Math.PI/2, am=Math.PI/30*m-Math.PI/2;
+  o+='<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+r*0.5*Math.cos(ah)).toFixed(1)+'" y2="'+(cy+r*0.5*Math.sin(ah)).toFixed(1)+'" stroke="'+INK+'" stroke-width="4.5" stroke-linecap="round"/>'+
+     '<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+r*0.78*Math.cos(am)).toFixed(1)+'" y2="'+(cy+r*0.78*Math.sin(am)).toFixed(1)+'" stroke="'+GRAPE+'" stroke-width="2.5" stroke-linecap="round"/>'+
+     '<circle cx="'+cx+'" cy="'+cy+'" r="3" fill="'+INK+'"/>';
+  return o;
+}
+function gato(x,y,c){
+  return '<ellipse cx="'+x+'" cy="'+(y+6)+'" rx="16" ry="12" fill="'+c+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+    '<circle cx="'+x+'" cy="'+(y-10)+'" r="11" fill="'+c+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+    '<polygon points="'+(x-10)+','+(y-14)+' '+(x-8)+','+(y-26)+' '+(x-2)+','+(y-18)+'" fill="'+c+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+    '<polygon points="'+(x+10)+','+(y-14)+' '+(x+8)+','+(y-26)+' '+(x+2)+','+(y-18)+'" fill="'+c+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+    '<circle cx="'+(x-4)+'" cy="'+(y-11)+'" r="1.6" fill="'+INK+'"/><circle cx="'+(x+4)+'" cy="'+(y-11)+'" r="1.6" fill="'+INK+'"/>';
+}
+
+/* ---------- PROVA 5 ---------- */
+var Q5=[
+{id:"p5-postes",fam:"Conte os vãos, não os postes",
+ txt:"NUMA RUA DE 50 METROS, OS POSTES FICAM A CADA 10 METROS. TEM UM POSTE BEM NO COMEÇO DA RUA E OUTRO BEM NO FIM. QUANTOS POSTES HÁ NESSA RUA?",
+ ill:(function(){var o='<line x1="30" y1="120" x2="330" y2="120" stroke="#B9B2C8" stroke-width="8" stroke-linecap="round"/>';
+   for(var i=0;i<6;i++){ var x=30+i*60;
+     o+='<line x1="'+x+'" y1="120" x2="'+x+'" y2="55" stroke="'+INK+'" stroke-width="4" stroke-linecap="round"/>'+
+        '<circle cx="'+x+'" cy="48" r="7" fill="#F2D06B" stroke="'+INK+'" stroke-width="1.2"/>';
+     if(i<5) o+=txt(x+30,145,"10 m",{s:11,f:SOFT}); }
+   o+=txt(30,30,"começo",{s:11,f:SOFT})+txt(330,30,"fim",{s:11,f:SOFT})+leg(180,170,"a rua inteira tem 50 metros");
+   return svg("0 0 360 180","Rua com postes a cada dez metros",o);})(),
+ opts:["4","5","6","10","50"],ans:2,
+ dica:{0:"Quatro é pouco. Conte os pedaços de 10 metros: 50 metros têm 5 pedaços, e ainda falta contar os postes das pontas.",
+       1:"Cinco são os PEDAÇOS de 10 metros. Mas cada pedaço tem um poste em cada ponta, e o poste do fim da rua também conta.",
+       3:"Dez seria um poste a cada 5 metros. Olhe a figura: os postes ficam de 10 em 10 metros.",
+       4:"Cinquenta é o comprimento da rua em metros, não o número de postes."},
+ resp:"A rua tem 50 ÷ 10 = 5 pedaços de 10 metros. Cinco pedaços em fila precisam de 6 postes: um no começo de cada pedaço e mais um no fim da rua. Conte na figura: 6 postes."},
+
+{id:"p5-pera",fam:"Troca justa",
+ txt:"UMA PERA PESA O MESMO QUE DUAS MAÇÃS. UMA MAÇÃ PESA O MESMO QUE TRÊS AMEIXAS. QUANTAS AMEIXAS PESAM O MESMO QUE UMA PERA?",
+ ill:(function(){
+   function pera(x,y){ return '<path d="M'+x+' '+(y-22)+' q-14 8 -14 20 a14 14 0 0 0 28 0 q0 -12 -14 -20 z" fill="#C9DC6E" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   function maca(x,y){ return '<circle cx="'+x+'" cy="'+y+'" r="11" fill="'+ROSE+'" stroke="'+INK+'" stroke-width="1.2"/><line x1="'+x+'" y1="'+(y-11)+'" x2="'+x+'" y2="'+(y-17)+'" stroke="'+INK+'" stroke-width="1.5"/>'; }
+   function ameixa(x,y){ return '<circle cx="'+x+'" cy="'+y+'" r="7" fill="'+GRAPE+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   return svg("0 0 360 230","Duas balanças: pera contra maçãs, maçã contra ameixas",
+     balanca(110,40,110,pera(0,-6),maca(-12,-14)+maca(12,-14))+leg(110,110,"1 pera = 2 maçãs")+
+     balanca(250,130,110,maca(0,-14),ameixa(-16,-8)+ameixa(0,-8)+ameixa(16,-8))+leg(250,200,"1 maçã = 3 ameixas"));})(),
+ opts:["3","4","5","6","9"],ans:3,
+ dica:{0:"Três ameixas valem UMA maçã. A pera vale duas maçãs.",
+       1:"Você somou 2 + 2? Cada maçã vira 3 ameixas, não 2.",
+       2:"Você somou 2 + 3. Aqui é trocar: cada uma das duas maçãs vira 3 ameixas.",
+       4:"Nove seria se a pera valesse 3 maçãs. Olhe a primeira balança: são 2 maçãs."},
+ resp:"A pera vale 2 maçãs. Cada maçã vale 3 ameixas. Trocando uma maçã de cada vez: 3 + 3 = 6 ameixas."},
+
+{id:"p5-cartao",fam:"Virar de lado",
+ txt:"O CARTÃO DA FIGURA TEM UMA ESTRELA NO CANTO DE CIMA À ESQUERDA E UMA SETA APONTANDO PARA A DIREITA. LARA GIROU O CARTÃO MEIA VOLTA, DEIXANDO-O DE CABEÇA PARA BAIXO. COMO O CARTÃO FICOU?",
+ ill:svg("0 0 360 170","Cartão com estrela no canto superior esquerdo e seta para a direita",
+   '<rect x="110" y="20" width="140" height="120" rx="10" fill="#FFF8E8" stroke="'+INK+'" stroke-width="2.5"/>'+
+   estrela(140,48,15)+seta(180,88,"dir",GRAPE)+
+   '<path d="M270 40 a40 40 0 1 1 -20 90" stroke="'+SOFT+'" stroke-width="2" fill="none" stroke-dasharray="5 4"/>'+
+   leg(180,162,"gire meia volta: fica de cabeça para baixo")),
+ opts:["estrela em cima à esquerda, seta para a esquerda","estrela embaixo à direita, seta para a esquerda",
+       "estrela embaixo à esquerda, seta para a direita","estrela em cima à direita, seta para a esquerda","estrela embaixo à direita, seta para a direita"],
+ optsIll:[cartaoSeta("TL","esq"),cartaoSeta("BR","esq"),cartaoSeta("BL","dir"),cartaoSeta("TR","esq"),cartaoSeta("BR","dir")],
+ ans:1,
+ dica:{0:"A seta virou, mas a estrela ficou parada. Quando o cartão gira, a estrela também sai do lugar.",
+       2:"Meia volta não é só virar para baixo: o que estava à esquerda vai para a direita também.",
+       3:"Isso é só espelhar. Numa meia volta, o que está em cima vai para baixo.",
+       4:"A estrela está no lugar certo! Mas a seta também gira: se apontava para a direita, passa a apontar para a esquerda."},
+ resp:"Girar meia volta troca cima com baixo E esquerda com direita ao mesmo tempo. A estrela sai do canto de cima à esquerda e vai para o canto de baixo à direita. A seta, que apontava para a direita, passa a apontar para a esquerda."},
+
+{id:"p5-bichos",fam:"Cada um no seu lugar",
+ txt:"LIA, MEL E NINA TÊM CADA UMA UM BICHINHO DIFERENTE: UM GATO, UM CACHORRO OU UM PEIXE. O BICHINHO DA MEL NÃO TEM PELO. A NINA TEM MEDO DE CACHORRO. QUEM TEM O GATO?",
+ ill:(function(){var o="", n=["LIA","MEL","NINA"];
+   n.forEach(function(t,i){ var x=90+i*90; o+=crianca(x,70,"#C4BFD4",t)+'<circle cx="'+x+'" cy="130" r="14" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/>'+txt(x,136,"?",{s:16,w:800,f:GRAPE}); });
+   o+=gato(100,178,"#E0B87A")+txt(100,205,"gato",{s:10,f:SOFT})+
+      '<ellipse cx="180" cy="180" rx="18" ry="11" fill="#A98A61" stroke="'+INK+'" stroke-width="1.2"/><circle cx="196" cy="172" r="8" fill="#A98A61" stroke="'+INK+'" stroke-width="1.2"/>'+txt(180,205,"cachorro",{s:10,f:SOFT})+
+      '<ellipse cx="260" cy="180" rx="16" ry="9" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.2"/><polygon points="276,180 288,171 288,189" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.2"/>'+txt(262,205,"peixe",{s:10,f:SOFT});
+   return svg("0 0 360 215","Três meninas e três bichinhos",o);})(),
+ opts:["LIA","MEL","NINA","NÃO DÁ PARA SABER"],ans:2,
+ dica:{0:"Descubra primeiro o bichinho da Mel. Qual dos três não tem pelo?",
+       1:"O bichinho da Mel não tem pelo. O gato tem pelo! Então o da Mel só pode ser o peixe.",
+       3:"Dá para saber sim. Comece pela Mel: sem pelo, só pode ser o peixe. Depois pense na Nina."},
+ resp:"O gato e o cachorro têm pelo, então o bichinho da Mel é o peixe. A Nina tem medo de cachorro, e o peixe já é da Mel, então a Nina tem o gato. Sobra o cachorro para a Lia."},
+
+{id:"p5-pulos",fam:"Descubra a regra",
+ txt:"UM CANGURU COMEÇA NO NÚMERO 1 E PULA SEMPRE DE 4 EM 4: 1, 5, 9, 13... EM QUAL DESTES NÚMEROS ELE VAI PISAR?",
+ ill:(function(){var o='<line x1="20" y1="110" x2="340" y2="110" stroke="'+INK+'" stroke-width="2"/>';
+   for(var i=1;i<=24;i++){ var x=20+(i-1)*13.9; o+='<line x1="'+x+'" y1="106" x2="'+x+'" y2="114" stroke="'+INK+'" stroke-width="1"/>';
+     if(i%4===1) o+=txt(x,130,i,{s:11,w:700,f:GRAPE})+'<circle cx="'+x+'" cy="110" r="5" fill="'+GRAPE+'"/>'; }
+   [1,5,9,13].forEach(function(n,i){ var x1=20+(n-1)*13.9, x2=x1+4*13.9;
+     o+='<path d="M'+x1+' 104 Q'+((x1+x2)/2)+' 55 '+x2+' 104" stroke="'+LEAF+'" stroke-width="2.5" fill="none"/>'; });
+   o+=txt(300,70,"...",{s:22,w:800,f:SOFT})+leg(180,160,"o canguru pula de 4 em 4");
+   return svg("0 0 360 170","Reta numérica com pulos de quatro em quatro",o);})(),
+ opts:["20","21","22","23","24"],ans:1,
+ dica:{0:"Vinte é par. Veja: todos os números em que ele pisa (1, 5, 9, 13...) são ímpares.",
+       2:"Vinte e dois é par, e o canguru só pisa em números ímpares. Continue a sequência: 13, 17, ...",
+       3:"Continue contando de 4 em 4 a partir do 13: 17, 21, 25. O 23 fica no meio de um pulo.",
+       4:"Vinte e quatro é par. Continue a sequência: 13, 17, 21..."},
+ resp:"Continuando de 4 em 4: 1, 5, 9, 13, 17, 21, 25... O canguru pisa no 21. (Dica: ele só pisa em números ímpares, e o 23 ele pula por cima.)"},
+
+{id:"p5-lapis",fam:"Ter certeza",
+ txt:"NUM POTE HÁ 4 LÁPIS AZUIS, 4 VERMELHOS E 4 VERDES, TODOS MISTURADOS. SEM OLHAR, QUAL É O MENOR NÚMERO DE LÁPIS QUE TEO PRECISA PEGAR PARA TER CERTEZA DE FICAR COM DOIS DA MESMA COR?",
+ ill:(function(){var o='<rect x="130" y="90" width="100" height="90" rx="8" fill="#E9DCC6" stroke="'+INK+'" stroke-width="2"/>';
+   var cores=[SKY,ROSE,LEAF];
+   for(var i=0;i<12;i++){ var x=138+i*7.5, c=cores[i%3];
+     o+='<g transform="translate('+x+',95) rotate('+((i-6)*3)+')"><rect x="0" y="-70" width="6" height="70" fill="'+c+'" stroke="'+INK+'" stroke-width="0.8"/><polygon points="0,-70 3,-78 6,-70" fill="#F5E0A8" stroke="'+INK+'" stroke-width="0.8"/></g>'; }
+   o+=leg(180,200,"4 azuis, 4 vermelhos e 4 verdes");
+   return svg("0 0 360 210","Pote com doze lápis de três cores",o);})(),
+ opts:["2","3","4","5","12"],ans:2,
+ dica:{0:"Com azar, os dois podem ser de cores diferentes.",
+       1:"Com azar, podem vir um azul, um vermelho e um verde: três cores diferentes, nenhuma repetida.",
+       3:"Dá para garantir com um a menos. O pior azar é pegar uma de cada cor; quantas cores existem?",
+       4:"Doze garante, mas é muito mais do que precisa. Pense no pior azar possível."},
+ resp:"O pior azar é pegar um lápis de cada cor: azul, vermelho e verde. São 3 lápis, todos diferentes. O 4º lápis é de uma dessas três cores, então ele repete alguma. Logo, 4 lápis garantem."},
+
+{id:"p5-bone",fam:"Não conte duas vezes",
+ txt:"NA FILA DO CINEMA, 4 CRIANÇAS ESTÃO DE BONÉ E 3 ESTÃO DE ÓCULOS. UMA DELAS ESTÁ DE BONÉ E DE ÓCULOS AO MESMO TEMPO. QUANTAS CRIANÇAS ESTÃO DE BONÉ OU DE ÓCULOS?",
+ ill:(function(){var o="";
+   var cfg=[[1,0],[1,0],[1,0],[1,1],[0,1],[0,1]];
+   cfg.forEach(function(c,i){ var x=50+i*52;
+     o+=crianca(x,80,"#C4BFD4");
+     if(c[0]) o+='<path d="M'+(x-9)+' '+(72-16)+' a9 9 0 0 1 18 0 h5" stroke="'+INK+'" stroke-width="2" fill="'+GRAPE+'"/>';
+     if(c[1]) o+='<circle cx="'+(x-4)+'" cy="64" r="3.5" fill="none" stroke="'+INK+'" stroke-width="1.5"/><circle cx="'+(x+4)+'" cy="64" r="3.5" fill="none" stroke="'+INK+'" stroke-width="1.5"/>'; });
+   o+=leg(180,130,"a criança do meio está de boné E de óculos");
+   return svg("0 0 360 140","Crianças na fila, algumas de boné e algumas de óculos",o);})(),
+ opts:["1","5","6","7","8"],ans:2,
+ dica:{0:"Uma é só a que está com os dois. A pergunta é sobre todas que têm boné ou óculos.",
+       1:"Faltou gente. Conte na figura: quantas crianças têm pelo menos uma das duas coisas?",
+       3:"Sete é 4 + 3, mas a criança que está de boné e óculos foi contada duas vezes.",
+       4:"Oito é demais. Conte na figura quantas crianças aparecem."},
+ resp:"4 + 3 = 7, mas a criança que tem boné e óculos entrou nas duas contas. Tirando a repetida: 7 − 1 = 6 crianças. Confira contando na figura."},
+
+{id:"p5-relogio",fam:"Olhe direito",
+ txt:"QUE HORAS O RELÓGIO ESTÁ MARCANDO?",
+ ill:svg("0 0 360 190","Relógio com o ponteiro pequeno entre o 4 e o 5 e o grande no 6",
+   relogio(180,90,75,4,30)+leg(180,185,"ponteiro grosso = horas; ponteiro roxo = minutos")),
+ opts:["4 HORAS","4 HORAS E 30 MINUTOS","5 HORAS","5 HORAS E 30 MINUTOS","6 HORAS E 20 MINUTOS"],ans:1,
+ dica:{0:"Seriam 4 horas se o ponteiro grande estivesse no 12. Olhe onde ele está.",
+       2:"Seriam 5 horas se o ponteiro pequeno estivesse bem em cima do 5 e o grande no 12.",
+       3:"O ponteiro pequeno ainda não chegou no 5. Ele está entre o 4 e o 5, então ainda é a hora 4 e pouco.",
+       4:"O ponteiro grande está no 6, não no 4. Ponteiro grande no 6 quer dizer 30 minutos."},
+ resp:"O ponteiro grande (dos minutos) está no 6, que quer dizer 30 minutos. O ponteiro pequeno (das horas) está entre o 4 e o 5: já passou do 4, mas ainda não chegou ao 5. Então são 4 horas e 30 minutos."},
+
+{id:"p5-bandeira",fam:"Montar direitinho",
+ txt:"DUDA VAI PINTAR UMA BANDEIRA COM DUAS LISTRAS, UMA EM CIMA E OUTRA EMBAIXO. ELA TEM TINTA VERMELHA, AZUL E VERDE, E AS DUAS LISTRAS PRECISAM TER CORES DIFERENTES. QUANTAS BANDEIRAS DIFERENTES ELA PODE PINTAR?",
+ ill:(function(){var o='<rect x="60" y="30" width="120" height="40" fill="#fff" stroke="'+INK+'" stroke-width="2"/><rect x="60" y="70" width="120" height="40" fill="#fff" stroke="'+INK+'" stroke-width="2"/>'+
+   '<line x1="60" y1="20" x2="60" y2="130" stroke="'+INK+'" stroke-width="4"/>'+txt(120,56,"?",{s:22,w:800,f:GRAPE})+txt(120,96,"?",{s:22,w:800,f:GRAPE});
+   [[ROSE,"vermelha"],[SKY,"azul"],[LEAF,"verde"]].forEach(function(c,i){ var y=40+i*34;
+     o+='<rect x="230" y="'+y+'" width="26" height="20" rx="3" fill="'+c[0]+'" stroke="'+INK+'" stroke-width="1.2"/>'+txt(266,y+15,c[1],{s:12,a:"start"}); });
+   o+=leg(180,150,"vermelho em cima com azul embaixo é diferente")+leg(180,164,"de azul em cima com vermelho embaixo");
+   return svg("0 0 360 172","Bandeira de duas listras e três potes de tinta",o);})(),
+ opts:["3","4","5","6","9"],ans:3,
+ dica:{0:"Três é o número de cores. Para cada cor de cima, ainda dá para escolher a cor de baixo.",
+       1:"Faltaram algumas. Comece com vermelho em cima: embaixo pode ser azul ou verde. Agora faça o mesmo com as outras cores em cima.",
+       2:"Quase! Para cada uma das 3 cores em cima, há 2 escolhas para baixo.",
+       4:"Nove incluiria bandeiras com as duas listras da mesma cor, e isso não vale."},
+ resp:"Se a listra de cima é vermelha, a de baixo pode ser azul ou verde (2 jeitos). O mesmo acontece com azul em cima (2 jeitos) e com verde em cima (2 jeitos). Total: 2 + 2 + 2 = 6 bandeiras."},
+
+{id:"p5-quadros",fam:"Ache o diferente",
+ txt:"QUATRO DESTES QUADROS SÃO IGUAIS, SÓ QUE GIRADOS. UM DELES É DIFERENTE: NÃO DÁ PARA GIRAR NENHUM DOS OUTROS E CHEGAR NELE. QUAL É O DIFERENTE?",
+ ill:(function(){var o="", R=ROSE, B=SKY, G=LEAF, N=null;
+   /* sentido horário: vermelho → azul → verde (os quatro iguais); o C vai no sentido contrário */
+   var q=[[R,B,G,N],[N,R,B,G],[R,G,B,N],[G,N,R,B],[B,G,N,R]];
+   q.forEach(function(ordem,i){ var x=14+i*70;
+     o+='<g transform="translate('+x+',20)">'+quadroCores(ordem)+'</g>'+txt(x+48,135,"ABCDE"[i],{s:14,w:800,f:SOFT}); });
+   return svg("0 0 360 150","Cinco quadros de quatro casas com três cores",o);})(),
+ opts:["A","B","C","D","E"],ans:2,
+ dica:{0:"Gire o quadro A: a casa vazia vai girando junto. Ele vira o B, o D e o E. Procure o que não combina.",
+       1:"O B é o A girado um quarto de volta. Tente com os outros.",
+       3:"O D é o A girado meia volta. Tente com os outros.",
+       4:"O E é o A girado três quartos de volta. Tente com os outros."},
+ resp:"Nos quadros A, B, D e E, andando no sentido do relógio a partir do vermelho, vem azul e depois verde. No quadro C, a partir do vermelho vem verde e depois azul. Por mais que você gire o C, a ordem das cores não muda. O diferente é o C."},
+
+{id:"p5-fita",fam:"Conte os vãos, não os postes",
+ txt:"UMA FITA TEM 20 CENTÍMETROS. RAFA QUER CORTÁ-LA EM PEDAÇOS DE 5 CENTÍMETROS CADA. QUANTOS CORTES ELE PRECISA FAZER?",
+ ill:(function(){var o='<rect x="40" y="60" width="280" height="36" rx="4" fill="#F2A0B4" stroke="'+INK+'" stroke-width="2"/>';
+   for(var i=1;i<4;i++){ var x=40+i*70; o+='<line x1="'+x+'" y1="50" x2="'+x+'" y2="106" stroke="'+INK+'" stroke-width="2" stroke-dasharray="5 4"/>'+
+     '<path d="M'+(x-6)+' 38 l6 8 l6 -8" stroke="'+GRAPE+'" stroke-width="2.5" fill="none"/>'; }
+   for(var j=0;j<4;j++) o+=txt(75+j*70,84,"5 cm",{s:12,w:700});
+   o+=leg(180,135,"a fita inteira tem 20 cm");
+   return svg("0 0 360 145","Fita de vinte centímetros com marcas de cinco em cinco",o);})(),
+ opts:["3","4","5","15","20"],ans:0,
+ dica:{1:"Quatro são os PEDAÇOS. Para fazer 4 pedaços, quantas vezes a tesoura corta? Olhe as linhas pontilhadas.",
+       2:"Cinco é o tamanho de cada pedaço em centímetros. Conte os cortes na figura.",
+       3:"Quinze seria se ele cortasse de 1 em 1 centímetro, mas sobrando a ponta. Os pedaços têm 5 cm.",
+       4:"Vinte é o tamanho da fita."},
+ resp:"20 cm divididos em pedaços de 5 cm dão 4 pedaços. Para separar 4 pedaços em fila bastam 3 cortes: o primeiro corte faz 2 pedaços, o segundo faz 3, e o terceiro faz 4."},
+
+{id:"p5-cadernos",fam:"Troca justa",
+ txt:"TRÊS CADERNOS IGUAIS CUSTAM 12 REAIS. QUANTO CUSTAM CINCO DESSES CADERNOS?",
+ ill:(function(){var o="";
+   function cad(x,y){ return '<rect x="'+x+'" y="'+y+'" width="34" height="44" rx="4" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.5"/><line x1="'+(x+8)+'" y1="'+y+'" x2="'+(x+8)+'" y2="'+(y+44)+'" stroke="'+INK+'" stroke-width="1.5"/>'; }
+   for(var i=0;i<3;i++) o+=cad(40+i*44,30);
+   o+=txt(185,60,"= R$ 12",{s:15,a:"start",w:800});
+   for(var j=0;j<5;j++) o+=cad(40+j*44,100);
+   o+=txt(270,130,"= ?",{s:15,a:"start",w:800,f:GRAPE});
+   return svg("0 0 360 160","Três cadernos custam doze reais; cinco cadernos custam quanto?",o);})(),
+ opts:["R$ 14","R$ 15","R$ 20","R$ 24","R$ 60"],ans:2,
+ dica:{0:"Você somou 12 + 2? Cada caderno custa mais que 1 real. Descubra primeiro o preço de UM caderno.",
+       1:"Quinze é 5 × 3, mas cada caderno não custa 3 reais. Divida 12 por 3.",
+       3:"Vinte e quatro seria o preço de 6 cadernos (o dobro de 3). Ela quer 5.",
+       4:"Sessenta é 5 × 12, mas 12 é o preço de TRÊS cadernos, não de um."},
+ resp:"Se 3 cadernos custam 12 reais, cada caderno custa 12 ÷ 3 = 4 reais. Cinco cadernos custam 4 + 4 + 4 + 4 + 4 = 20 reais."}
+];
+
+/* ---------- PROVA 6 ---------- */
+var Q6=[
+{id:"p6-cerca",fam:"Conte os vãos, não os postes",
+ txt:"UMA CERCA TEM 7 ESTACAS EM FILA. ENTRE CADA DUAS ESTACAS VIZINHAS HÁ 2 TÁBUAS, UMA EM CIMA DA OUTRA. QUANTAS TÁBUAS TEM A CERCA?",
+ ill:(function(){var o="";
+   for(var i=0;i<6;i++){ var x=40+i*48; o+='<rect x="'+(x+6)+'" y="62" width="36" height="9" fill="#D9B98A" stroke="'+INK+'" stroke-width="1.2"/><rect x="'+(x+6)+'" y="92" width="36" height="9" fill="#D9B98A" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   for(var j=0;j<7;j++){ var xs=40+j*48; o+='<rect x="'+(xs-5)+'" y="40" width="10" height="80" fill="#9C7650" stroke="'+INK+'" stroke-width="1.2"/><polygon points="'+(xs-5)+',40 '+xs+',32 '+(xs+5)+',40" fill="#9C7650" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   o+=leg(180,145,"7 estacas; entre duas estacas vizinhas, 2 tábuas");
+   return svg("0 0 360 155","Cerca com sete estacas e tábuas entre elas",o);})(),
+ opts:["7","12","14","16","21"],ans:1,
+ dica:{0:"Sete é o número de ESTACAS. Entre elas é que ficam as tábuas.",
+       2:"Catorze seria 7 × 2, mas 7 estacas em fila têm só 6 espaços entre elas.",
+       3:"Dezesseis seria 8 espaços. Conte os espaços entre as 7 estacas na figura.",
+       4:"Vinte e um seria 3 tábuas por espaço. São 2 por espaço."},
+ resp:"Sete estacas em fila deixam 6 espaços entre elas (conte na figura). Cada espaço tem 2 tábuas: 6 × 2 = 12 tábuas."},
+
+{id:"p6-abacaxi",fam:"Troca justa",
+ txt:"AS DUAS BALANÇAS ESTÃO EQUILIBRADAS. QUANTAS MAÇÃS PESAM O MESMO QUE UM ABACAXI?",
+ ill:(function(){
+   function abacaxi(x,y){ return '<ellipse cx="'+x+'" cy="'+(y-10)+'" rx="12" ry="16" fill="#E7A94F" stroke="'+INK+'" stroke-width="1.2"/><path d="M'+(x-8)+' '+(y-24)+' l8 -14 l8 14" fill="'+LEAF+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   function laranja(x,y){ return '<circle cx="'+x+'" cy="'+y+'" r="10" fill="#F5A623" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   function maca(x,y){ return '<circle cx="'+x+'" cy="'+y+'" r="9" fill="'+ROSE+'" stroke="'+INK+'" stroke-width="1.2"/><line x1="'+x+'" y1="'+(y-9)+'" x2="'+x+'" y2="'+(y-14)+'" stroke="'+INK+'" stroke-width="1.5"/>'; }
+   return svg("0 0 360 230","Abacaxi contra duas laranjas e uma maçã; laranja contra duas maçãs",
+     balanca(110,40,120,abacaxi(0,-4),laranja(-20,-12)+laranja(2,-12)+maca(22,-12))+leg(110,110,"1 abacaxi = 2 laranjas + 1 maçã")+
+     balanca(250,130,110,laranja(0,-12),maca(-12,-12)+maca(12,-12))+leg(250,200,"1 laranja = 2 maçãs"));})(),
+ opts:["3","4","5","6","8"],ans:2,
+ dica:{0:"Três é o número de frutas do lado direito da primeira balança. Mas cada laranja vale 2 maçãs.",
+       1:"Quatro são só as duas laranjas trocadas por maçãs. Não esqueça da maçã que já estava lá.",
+       3:"Seis seria se fossem 3 laranjas. São 2 laranjas e 1 maçã.",
+       4:"Oito é demais. Troque cada laranja por 2 maçãs e some com a maçã que já estava."},
+ resp:"O abacaxi vale 2 laranjas e 1 maçã. Cada laranja vale 2 maçãs, então as 2 laranjas valem 4 maçãs. Juntando com a maçã que já estava: 4 + 1 = 5 maçãs."},
+
+{id:"p6-cubo",fam:"Virar de lado",
+ txt:"A FIGURA MOSTRA UM CUBO ABERTO E ESTICADO. QUANDO ELE FOR MONTADO, QUAL FIGURA VAI FICAR NA FACE OPOSTA À DA ESTRELA?",
+ ill:svg("0 0 360 200","Planificação de um cubo em forma de cruz com seis figuras",
+   planificacao(130,100,52,{
+     esq:function(x,y){ return estrela(x,y,15); },
+     c:function(x,y){ return lua(x,y,15); },
+     dir:function(x,y){ return coracao(x,y,15); },
+     dir2:function(x,y){ return bola(x,y,14); },
+     cima:function(x,y){ return '<rect x="'+(x-13)+'" y="'+(y-13)+'" width="26" height="26" fill="'+LEAF+'" stroke="'+INK+'" stroke-width="1.2"/>'; },
+     baixo:function(x,y){ return '<polygon points="'+x+','+(y-14)+' '+(x+15)+','+(y+11)+' '+(x-15)+','+(y+11)+'" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   })+leg(180,190,"dobre as faces para formar o cubo")),
+ opts:["LUA","CORAÇÃO","BOLA","QUADRADO VERDE","TRIÂNGULO"],ans:1,
+ dica:{0:"A lua está grudada na estrela. Faces grudadas ficam vizinhas no cubo, não opostas.",
+       2:"A bola fica oposta à LUA: ela está duas casas depois da lua na fileira.",
+       3:"O quadrado e o triângulo ficam opostos um ao outro: um dobra para cima e o outro para baixo.",
+       4:"O triângulo fica oposto ao quadrado verde. A estrela está na fileira do meio."},
+ resp:"Na fileira do meio, as faces que estão separadas por uma casa ficam opostas: a estrela fica oposta ao coração (a lua fica entre eles), e a lua fica oposta à bola. O quadrado e o triângulo, que estão em cima e embaixo, ficam opostos um ao outro."},
+
+{id:"p6-gatos",fam:"Cada um no seu lugar",
+ txt:"TRÊS GATOS ESTÃO DEITADOS EM TRÊS ALMOFADAS LADO A LADO: UM BRANCO, UM PRETO E UM CINZA. O GATO BRANCO NÃO ESTÁ NAS PONTAS. O GATO PRETO ESTÁ À DIREITA DO BRANCO. EM QUAL ALMOFADA ESTÁ O GATO CINZA?",
+ ill:(function(){var o="", n=["ESQUERDA","MEIO","DIREITA"];
+   n.forEach(function(t,i){ var x=90+i*90;
+     o+='<ellipse cx="'+x+'" cy="110" rx="38" ry="14" fill="'+GRAPESOFT+'" stroke="'+GRAPE+'" stroke-width="1.5"/>'+txt(x,100,"?",{s:22,w:800,f:GRAPE})+txt(x,140,t,{s:10,w:700,f:SOFT}); });
+   o+=gato(80,185,"#fff")+gato(180,185,"#4A4458")+gato(280,185,"#B9B2C8");
+   return svg("0 0 360 215","Três almofadas e três gatos: branco, preto e cinza",o);})(),
+ opts:["ESQUERDA","MEIO","DIREITA","NÃO DÁ PARA SABER"],ans:0,
+ dica:{1:"O meio é do gato BRANCO: ele é o único que não está nas pontas.",
+       2:"A direita é do gato PRETO: ele está à direita do branco, que está no meio.",
+       3:"Dá para saber sim. Se o branco não está nas pontas, ele só pode estar no meio. Depois veja o preto."},
+ resp:"O branco não está nas pontas, então ele está no meio. O preto está à direita do branco, então o preto está na almofada da direita. Sobra a da esquerda para o cinza."},
+
+{id:"p6-torres",fam:"Descubra a regra",
+ txt:"LARA FAZ TORRES DE CUBOS. A 1ª TORRE TEM 1 CUBO, A 2ª TEM 3 CUBOS E A 3ª TEM 5 CUBOS. SE ELA CONTINUAR DO MESMO JEITO, QUANTOS CUBOS TERÁ A 6ª TORRE?",
+ ill:(function(){var o="", s=18;
+   [1,3,5].forEach(function(n,i){ var x=50+i*80;
+     for(var k=0;k<n;k++) o+='<rect x="'+(x-s/2)+'" y="'+(140-(k+1)*s)+'" width="'+s+'" height="'+s+'" fill="#C9A87C" stroke="'+INK+'" stroke-width="1.2"/>';
+     o+=txt(x,160,n,{s:14,w:800})+txt(x,176,(i+1)+"ª",{s:10,f:SOFT}); });
+   o+=txt(290,100,"?",{s:30,w:800,f:GRAPE})+txt(290,176,"6ª",{s:10,f:SOFT})+'<line x1="20" y1="140" x2="340" y2="140" stroke="'+INK+'" stroke-width="2"/>';
+   return svg("0 0 360 185","Torres de 1, 3 e 5 cubos",o);})(),
+ opts:["7","9","11","12","13"],ans:2,
+ dica:{0:"Sete é a 4ª torre. Continue: 5ª, 6ª...",
+       1:"Nove é a 5ª torre. Falta mais uma.",
+       3:"Cada torre tem 2 cubos a mais que a anterior, então os números pulam de 2 em 2: 1, 3, 5, 7... Doze fica no meio de um pulo.",
+       4:"Treze seria a 7ª torre. Pare na 6ª."},
+ resp:"Cada torre tem 2 cubos a mais que a anterior: 1, 3, 5, 7, 9, 11. A 6ª torre tem 11 cubos."},
+
+{id:"p6-azul",fam:"Ter certeza",
+ txt:"NUMA CAIXA HÁ 6 BOLAS VERMELHAS E 4 BOLAS AZUIS. SEM OLHAR, QUAL É O MENOR NÚMERO DE BOLAS QUE JÚLIA PRECISA PEGAR PARA TER CERTEZA DE PEGAR PELO MENOS UMA BOLA AZUL?",
+ ill:(function(){var o='<rect x="100" y="60" width="160" height="110" rx="8" fill="#E9DCC6" stroke="'+INK+'" stroke-width="2"/>';
+   for(var i=0;i<10;i++){ var x=125+(i%5)*28, y=90+Math.floor(i/5)*40; o+=bola(x,y,12,(i===1||i===4||i===6||i===8)?SKY:ROSE); }
+   o+=bola(120,195,6,ROSE)+txt(132,199,"VERMELHAS: 6",{s:10,a:"start"})+bola(230,195,6,SKY)+txt(242,199,"AZUIS: 4",{s:10,a:"start"});
+   return svg("0 0 360 210","Caixa com seis bolas vermelhas e quatro azuis",o);})(),
+ opts:["1","4","5","7","10"],ans:3,
+ dica:{0:"Com azar, a primeira bola pode ser vermelha.",
+       1:"Quatro é o número de bolas azuis. Mas com azar as primeiras bolas podem ser todas vermelhas!",
+       2:"Com muito azar, as 5 primeiras podem ser todas vermelhas (tem 6 vermelhas na caixa).",
+       4:"Dez garante, mas é mais do que precisa. Pense: quantas vermelhas ela pode pegar antes de vir uma azul?"},
+ resp:"O pior azar é pegar todas as vermelhas primeiro: 6 bolas, nenhuma azul. A 7ª bola não tem mais como ser vermelha, porque elas acabaram. Então 7 bolas garantem pelo menos uma azul."},
+
+{id:"p6-tres",fam:"Não conte duas vezes",
+ txt:"LEO ESCREVEU OS NÚMEROS DE 1 ATÉ 40. QUANTOS DESSES NÚMEROS TÊM PELO MENOS UM ALGARISMO 3?",
+ ill:(function(){var o="";
+   for(var i=0;i<40;i++){ var x=28+(i%10)*34, y=40+Math.floor(i/10)*36, n=i+1, tem=String(n).indexOf("3")>=0;
+     o+='<rect x="'+(x-15)+'" y="'+(y-19)+'" width="30" height="28" rx="5" fill="'+(tem?GRAPESOFT:"#fff")+'" stroke="'+(tem?GRAPE:LINE)+'" stroke-width="1.5"/>'+txt(x,y,n,{s:12,w:tem?800:600,f:tem?GRAPE:INK}); }
+   o+=leg(180,172,"o 33 tem dois algarismos 3, mas é um número só");
+   return svg("0 0 360 185","Números de 1 a 40 com os que têm algarismo 3 destacados",o);})(),
+ opts:["4","12","13","14","22"],ans:2,
+ dica:{0:"Quatro são só o 3, o 13, o 23 e o 33. Não esqueça da fileira do 30 ao 39: todos têm 3!",
+       1:"Faltou um. São 10 números de 30 a 39, mais o 3, o 13 e o 23.",
+       3:"Um a mais. O 33 tem dois algarismos 3, mas é um número só: conte ele uma vez.",
+       4:"Nem todos os números têm 3. Por exemplo, o 5 e o 12 não têm."},
+ resp:"Os números com algarismo 3 são: 3, 13, 23 e todos de 30 a 39 (que são 10). Isso dá 3 + 10 = 13 números. O 33 tem dois algarismos 3, mas conta como um número só."},
+
+{id:"p6-grafico",fam:"Olhe direito",
+ txt:"O GRÁFICO MOSTRA QUANTOS LIVROS CADA CRIANÇA LEU NAS FÉRIAS. QUANTOS LIVROS BIA LEU A MAIS DO QUE CAIO?",
+ ill:svg("0 0 360 190","Gráfico de barras: Ana 6, Bia 8, Caio 4 livros, escala de 2 em 2",
+   barras([["ANA",6,SKY],["BIA",8,ROSE],["CAIO",4,LEAF]],2,10)+txt(40,100,"livros",{s:10,f:SOFT})),
+ opts:["2","4","6","8","12"],ans:1,
+ dica:{0:"Cuidado com a escala: cada linha do gráfico vale 2 livros, não 1. A Bia está na linha do 8 e o Caio na do 4.",
+       2:"Seis é quanto a ANA leu. Olhe as barras da Bia e do Caio.",
+       3:"Oito é quanto a BIA leu. A pergunta é quantos a MAIS do que o Caio.",
+       4:"Doze é a soma de Bia e Caio (8 + 4). A pergunta é a diferença."},
+ resp:"A escala do gráfico vai de 2 em 2. A barra da Bia chega no 8 e a do Caio chega no 4. Então 8 − 4 = 4 livros a mais."},
+
+{id:"p6-roupa",fam:"Montar direitinho",
+ txt:"RITA VAI ESCOLHER UMA BLUSA E UMA SAIA. ELA TEM DUAS BLUSAS (AZUL E BRANCA) E TRÊS SAIAS (PRETA, VERDE E ROSA). DE QUANTOS JEITOS DIFERENTES ELA PODE SE VESTIR?",
+ ill:(function(){var o="";
+   function blusa(x,y,c){ return '<path d="M'+(x-20)+' '+(y-10)+' l8 -8 h24 l8 8 l-6 8 l-3 -3 v24 h-22 v-24 l-3 3 z" fill="'+c+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   function saia(x,y,c){ return '<path d="M'+(x-10)+' '+(y-14)+' h20 l10 32 h-40 z" fill="'+c+'" stroke="'+INK+'" stroke-width="1.2"/>'; }
+   o+=blusa(80,60,SKY)+blusa(140,60,"#fff")+txt(110,110,"blusas",{s:11,f:SOFT});
+   o+=saia(210,60,INK)+saia(260,60,LEAF)+saia(310,60,"#F2A0B4")+txt(260,110,"saias",{s:11,f:SOFT});
+   o+=leg(180,145,"uma blusa e uma saia por vez");
+   return svg("0 0 360 155","Duas blusas e três saias",o);})(),
+ opts:["3","5","6","8","9"],ans:2,
+ dica:{0:"Três é o número de saias. Cada saia pode ir com a blusa azul OU com a branca.",
+       1:"Cinco é 2 + 3. Mas aqui não é somar: para cada blusa, existem 3 saias possíveis.",
+       3:"Oito é demais. Com a blusa azul são 3 jeitos; com a branca, mais 3.",
+       4:"Nove seria com 3 blusas. Ela tem só 2."},
+ resp:"Com a blusa azul: saia preta, verde ou rosa (3 jeitos). Com a blusa branca: mais 3 jeitos. Total: 3 + 3 = 6."},
+
+{id:"p6-relogios",fam:"Ache o diferente",
+ txt:"QUATRO DESTES RELÓGIOS MARCAM A MESMA HORA. UM DELES MARCA UMA HORA DIFERENTE. QUAL?",
+ ill:(function(){var o="", hs=[[3,0],[3,0],[3,0],[12,15],[3,0]];
+   hs.forEach(function(h,i){ var cx=40+i*70; o+=relogioMini(cx,60,31,h[0],h[1])+txt(cx,112,"ABCDE"[i],{s:14,w:800,f:SOFT}); });
+   o+=leg(180,135,"ponteiro grosso = horas; ponteiro roxo = minutos");
+   return svg("0 0 360 145","Cinco relógios, quatro marcando três horas e um marcando doze e quinze",o);})(),
+ opts:["A","B","C","D","E"],ans:3,
+ dica:{0:"No relógio A, o ponteiro grosso (das horas) está no 3 e o roxo (dos minutos) no 12: são 3 horas.",
+       1:"No relógio B, o ponteiro grosso está no 3 e o roxo no 12: são 3 horas, igual ao A.",
+       2:"No relógio C, o ponteiro grosso está no 3 e o roxo no 12: são 3 horas, igual ao A.",
+       4:"No relógio E, o ponteiro grosso está no 3 e o roxo no 12: são 3 horas, igual ao A."},
+ resp:"Nos relógios A, B, C e E, o ponteiro grosso (das horas) aponta para o 3 e o roxo (dos minutos) para o 12: são 3 horas. No relógio D os ponteiros estão trocados: o grosso aponta para o 12 e o roxo para o 3. Isso é 12 horas e 15 minutos."},
+
+{id:"p6-sono",fam:"Conte os vãos, não os postes",
+ txt:"LÚCIA FOI DORMIR ÀS 9 HORAS DA NOITE E ACORDOU ÀS 7 HORAS DA MANHÃ. QUANTAS HORAS ELA DORMIU?",
+ ill:svg("0 0 360 180","Dois relógios: nove da noite e sete da manhã",
+   relogio(90,75,62,9,0)+lua(72,160,9)+txt(86,165,"9 da noite",{s:11,a:"start",f:SOFT})+
+   txt(180,82,"→",{s:26,w:800,f:SOFT})+
+   relogio(270,75,62,7,0)+'<circle cx="246" cy="158" r="7" fill="#F2D06B" stroke="'+INK+'" stroke-width="1"/>'+txt(260,163,"7 da manhã",{s:11,a:"start",f:SOFT})),
+ opts:["2","8","9","10","16"],ans:3,
+ dica:{0:"Você fez 9 − 7? Mas ela dormiu de noite e acordou no dia seguinte: a hora deu a volta pela meia-noite.",
+       1:"Faltam horas. Conte das 9 até a meia-noite (são 3), e depois da meia-noite até as 7.",
+       2:"Quase! Das 9 da noite até a meia-noite são 3 horas, e da meia-noite até as 7 são mais 7.",
+       4:"Dezesseis é 9 + 7, mas as horas não se somam assim. Conte passando pela meia-noite."},
+ resp:"Das 9 da noite até a meia-noite são 3 horas (10, 11, 12). Da meia-noite até as 7 da manhã são mais 7 horas. Total: 3 + 7 = 10 horas."},
+
+{id:"p6-pirulito",fam:"Troca justa",
+ txt:"DOIS PACOTES DE BALA CUSTAM O MESMO QUE TRÊS PIRULITOS. CADA PIRULITO CUSTA 2 REAIS. QUANTO CUSTA UM PACOTE DE BALA?",
+ ill:(function(){
+   function pac(x){ return '<rect x="'+x+'" y="40" width="40" height="56" rx="6" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1.2"/><path d="M'+(x+4)+' 40 l32 0" stroke="'+INK+'" stroke-width="2" stroke-dasharray="3 3"/>'+txt(x+20,74,"BALA",{s:9,w:800}); }
+   function pir(x){ return '<circle cx="'+(x+12)+'" cy="52" r="13" fill="'+ROSE+'" stroke="'+INK+'" stroke-width="1.2"/><path d="M'+(x+4)+' 48 q8 8 16 0" stroke="#fff" stroke-width="2" fill="none"/><line x1="'+(x+12)+'" y1="65" x2="'+(x+12)+'" y2="100" stroke="'+INK+'" stroke-width="2.5"/>'; }
+   var o=pac(30)+pac(80)+txt(150,78,"=",{s:26,w:800,f:SOFT})+pir(180)+pir(230)+pir(280)+
+     txt(192,122,"R$ 2",{s:12,w:700})+txt(242,122,"R$ 2",{s:12,w:700})+txt(292,122,"R$ 2",{s:12,w:700})+leg(180,150,"2 pacotes de bala custam o mesmo que 3 pirulitos");
+   return svg("0 0 360 160","Dois pacotes de bala valem três pirulitos",o);})(),
+ opts:["R$ 2","R$ 3","R$ 4","R$ 5","R$ 6"],ans:1,
+ dica:{0:"Dois é o preço do PIRULITO. Descubra quanto custam os três pirulitos juntos.",
+       2:"Se o pacote custasse 4, dois pacotes custariam 8. Mas três pirulitos custam quanto?",
+       3:"Cinco é 3 + 2. Aqui não é somar: descubra quanto valem os 3 pirulitos e divida entre os 2 pacotes.",
+       4:"Seis é o preço dos três pirulitos JUNTOS. Esse valor é igual ao de DOIS pacotes, não de um."},
+ resp:"Três pirulitos custam 2 + 2 + 2 = 6 reais. Então dois pacotes de bala também custam 6 reais, e cada pacote custa 6 ÷ 2 = 3 reais."}
+];
+
+/* ---------- PROVA 7 (um pouco mais puxada) ---------- */
+var Q7=[
+{id:"p7-onibus",fam:"Conte os vãos, não os postes",
+ txt:"UM ÔNIBUS SAI DO PONTO 1 E PARA EM TODOS OS PONTOS ATÉ O PONTO 9. DE UM PONTO ATÉ O SEGUINTE ELE LEVA 3 MINUTOS. QUANTO TEMPO ELE LEVA DO PONTO 1 ATÉ O PONTO 9?",
+ ill:(function(){var o='<line x1="30" y1="90" x2="330" y2="90" stroke="#B9B2C8" stroke-width="10" stroke-linecap="round"/>';
+   for(var i=0;i<9;i++){ var x=30+i*37.5; o+='<circle cx="'+x+'" cy="90" r="9" fill="'+(i===0||i===8?GRAPE:"#fff")+'" stroke="'+INK+'" stroke-width="1.5"/>'+txt(x,120,i+1,{s:12,w:700});
+     if(i<8) o+=txt(x+18.75,70,"3 min",{s:8,f:SOFT}); }
+   o+='<rect x="20" y="30" width="34" height="22" rx="4" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1.2"/><circle cx="28" cy="54" r="3" fill="'+INK+'"/><circle cx="46" cy="54" r="3" fill="'+INK+'"/>';
+   return svg("0 0 360 135","Nove pontos de ônibus em linha",o);})(),
+ opts:["9 MINUTOS","21 MINUTOS","24 MINUTOS","27 MINUTOS","30 MINUTOS"],ans:2,
+ dica:{0:"Nove é o número de pontos. Entre cada dois pontos ele gasta 3 minutos.",
+       1:"Vinte e um seriam 7 trechos. Conte os trechos entre o ponto 1 e o ponto 9 na figura.",
+       3:"Vinte e sete seria 9 × 3, mas 9 pontos em fila têm só 8 trechos entre eles.",
+       4:"Trinta seriam 10 trechos. Olhe a figura: do 1 ao 9 são menos trechos que isso."},
+ resp:"Do ponto 1 ao ponto 9 existem 8 trechos (1→2, 2→3, ... 8→9). Cada trecho leva 3 minutos: 8 × 3 = 24 minutos."},
+
+{id:"p7-caderno",fam:"Troca justa",
+ txt:"UM CADERNO E DOIS LÁPIS CUSTAM 8 REAIS. O MESMO CADERNO E CINCO LÁPIS CUSTAM 11 REAIS. QUANTO CUSTA O CADERNO?",
+ ill:(function(){var o="";
+   function cad(x,y){ return '<rect x="'+x+'" y="'+y+'" width="30" height="40" rx="4" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.5"/>'; }
+   function lap(x,y){ return '<rect x="'+x+'" y="'+y+'" width="7" height="36" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1"/><polygon points="'+x+','+y+' '+(x+3.5)+','+(y-7)+' '+(x+7)+','+y+'" fill="#F5E0A8" stroke="'+INK+'" stroke-width="1"/>'; }
+   o+=cad(30,30)+lap(72,34)+lap(86,34)+txt(120,58,"= R$ 8",{s:15,a:"start",w:800});
+   o+=cad(30,100)+lap(72,104)+lap(86,104)+lap(100,104)+lap(114,104)+lap(128,104)+txt(160,128,"= R$ 11",{s:15,a:"start",w:800});
+   o+=leg(180,165,"a diferença entre as duas compras são 3 lápis");
+   return svg("0 0 360 175","Caderno com dois lápis e caderno com cinco lápis",o);})(),
+ opts:["R$ 1","R$ 3","R$ 5","R$ 6","R$ 8"],ans:3,
+ dica:{0:"Um real é o preço de UM lápis. A pergunta é sobre o caderno.",
+       1:"Três reais é a diferença entre as compras, que são os 3 lápis a mais. Descubra o preço de um lápis e depois o do caderno.",
+       2:"Se o caderno custasse 5, os dois lápis da primeira compra custariam 3, e aí 5 lápis custariam mais de 3. Confira com a segunda compra.",
+       4:"Oito é o preço do caderno junto com dois lápis. Tire os lápis."},
+ resp:"A segunda compra tem 3 lápis a mais e custa 3 reais a mais (11 − 8). Então cada lápis custa 1 real. Na primeira compra, os 2 lápis custam 2, e o caderno custa 8 − 2 = 6 reais."},
+
+{id:"p7-placa",fam:"Virar de lado",
+ txt:"A PALAVRA LUA FOI ESCRITA NUM VIDRO, E A FIGURA MOSTRA COMO ELA É VISTA PELA FRENTE. COMO ELA É VISTA POR QUEM OLHA O VIDRO POR TRÁS?",
+ ill:svg("0 0 360 150","Vidro com a palavra LUA vista pela frente",
+   '<rect x="80" y="25" width="200" height="80" rx="8" fill="#EAF6FC" stroke="'+INK+'" stroke-width="2.5"/>'+
+   txt(130,80,"L",{s:40,w:800,f:GRAPE})+txt(180,80,"U",{s:40,w:800,f:GRAPE})+txt(230,80,"A",{s:40,w:800,f:GRAPE})+
+   leg(180,135,"vista pela FRENTE")),
+ opts:["LUA do mesmo jeito","AUL com as letras espelhadas","AUL com as letras normais","LUA com as letras espelhadas","AUL de cabeça para baixo"],
+ optsIll:[placaTexto("LUA",false,1),placaTexto("LUA",true,-1),placaTexto("LUA",false,-1),placaTexto("LUA",true,1),
+          '<svg viewBox="0 0 200 70" style="max-width:200px"><rect x="4" y="8" width="192" height="54" rx="8" fill="#FFF8E8" stroke="'+INK+'" stroke-width="2"/><g transform="translate(100,35) rotate(180)">'+txt(-50,12,"L",{s:30,w:800,f:GRAPE})+txt(0,12,"U",{s:30,w:800,f:GRAPE})+txt(50,12,"A",{s:30,w:800,f:GRAPE})+'</g></svg>'],
+ ans:1,
+ dica:{0:"Por trás do vidro, a pessoa vê tudo ao contrário: o que está à direita aparece à esquerda.",
+       2:"A ordem das letras inverteu, certo! Mas cada letra também fica espelhada. Olhe o L: por trás, o pezinho dele aponta para o outro lado.",
+       3:"As letras estão espelhadas, mas a ordem continua igual. Por trás, a letra que estava à direita (o A) passa a aparecer à esquerda.",
+       4:"Olhar por trás não vira a palavra de cabeça para baixo. O que fica em cima continua em cima."},
+ resp:"Quem olha por trás vê a palavra espelhada: a ordem das letras inverte (o A, que estava na direita, aparece na esquerda) e cada letra também fica virada. O U e o A são quase iguais no espelho, mas o L fica com o pezinho para o outro lado."},
+
+{id:"p7-corrida",fam:"Cada um no seu lugar",
+ txt:"NUMA CORRIDA, ANA CHEGOU ANTES DE BIA. CAIO CHEGOU DEPOIS DE BIA. DUDA CHEGOU DEPOIS DE ANA, MAS ANTES DE BIA. QUEM CHEGOU EM 3º LUGAR?",
+ ill:(function(){var o='<rect x="20" y="130" width="320" height="10" fill="#B9B2C8"/>';
+   for(var i=0;i<4;i++){ var x=60+i*80; o+='<rect x="'+(x-22)+'" y="'+(125-(4-i)*8)+'" width="44" height="'+((4-i)*8+5)+'" fill="'+(i===2?GRAPESOFT:"#F3EEE4")+'" stroke="'+(i===2?GRAPE:INK)+'" stroke-width="'+(i===2?2.5:1.2)+'"/>'+txt(x,118,(i+1)+"º",{s:13,w:800,f:i===2?GRAPE:INK})+txt(x,160,"?",{s:18,w:800,f:GRAPE}); }
+   o+=leg(180,30,"quem chegou em 3º?");
+   return svg("0 0 360 170","Pódio com quatro lugares",o);})(),
+ opts:["ANA","BIA","CAIO","DUDA","NÃO DÁ PARA SABER"],ans:1,
+ dica:{0:"A Ana chegou antes da Bia e antes da Duda. Ela foi a primeira!",
+       2:"O Caio chegou depois da Bia, e ninguém chegou depois dele. Ele foi o último, em 4º.",
+       3:"A Duda chegou depois da Ana, mas antes da Bia. Então ela ficou em 2º.",
+       4:"Dá para saber. Monte a fila: a Ana chegou antes de todo mundo. Quem veio logo depois?"},
+ resp:"A Ana chegou antes da Bia e antes da Duda, então a Ana foi a 1ª. A Duda chegou depois da Ana e antes da Bia: 2ª. A Bia foi a 3ª. O Caio, que chegou depois da Bia, foi o 4º."},
+
+{id:"p7-cofre",fam:"Descubra a regra",
+ txt:"PEDRINHO TEM 5 REAIS NO COFRE E GUARDA 2 REAIS POR DIA. DEPOIS DE QUANTOS DIAS ELE VAI TER 15 REAIS?",
+ ill:(function(){var o="", dias=["hoje","1 dia","2 dias","3 dias"], vals=[5,7,9,11];
+   dias.forEach(function(d,i){ var x=55+i*78;
+     o+='<rect x="'+(x-28)+'" y="40" width="56" height="60" rx="8" fill="#FFF1D6" stroke="'+INK+'" stroke-width="1.5"/><rect x="'+(x-10)+'" y="36" width="20" height="4" fill="'+INK+'"/>'+
+        txt(x,78,"R$ "+vals[i],{s:13,w:800})+txt(x,120,d,{s:11,f:SOFT}); });
+   o+=txt(335,78,"...",{s:20,w:800,f:SOFT})+leg(180,150,"a cada dia entram mais 2 reais");
+   return svg("0 0 360 160","Cofrinho crescendo dois reais por dia",o);})(),
+ opts:["3 DIAS","5 DIAS","7 DIAS","10 DIAS","15 DIAS"],ans:1,
+ dica:{0:"Depois de 3 dias ele tem 5 + 2 + 2 + 2 = 11 reais. Ainda não chegou em 15.",
+       2:"Depois de 7 dias ele já teria 19 reais, mais do que 15. Ele chega em 15 antes disso.",
+       3:"Dez é quanto FALTA (15 − 5). Mas cada dia ele guarda 2 reais, não 1.",
+       4:"Quinze é o que ele quer ter. Depois de 15 dias ele teria 35 reais!"},
+ resp:"Faltam 15 − 5 = 10 reais. Como ele guarda 2 por dia, precisa de 10 ÷ 2 = 5 dias. Confira: 5, 7, 9, 11, 13, 15."},
+
+{id:"p7-chaves",fam:"Ter certeza",
+ txt:"JOANA TEM 3 CHAVES E 3 CADEADOS. CADA CHAVE ABRE UM CADEADO DIFERENTE, MAS ELA NÃO SABE QUAL ABRE QUAL. NO PIOR CASO, QUANTAS VEZES ELA PRECISA TENTAR ABRIR UM CADEADO ATÉ DESCOBRIR A CHAVE DE TODOS?",
+ ill:(function(){var o="";
+   function chave(x,y,c){ return '<circle cx="'+x+'" cy="'+y+'" r="9" fill="none" stroke="'+c+'" stroke-width="4"/><path d="M'+(x+8)+' '+y+' h26 v8 h-6 v-4 h-6 v4 h-6 v-4 h-8" fill="'+c+'" stroke="'+INK+'" stroke-width="1"/>'; }
+   function cadeado(x,y){ return '<path d="M'+(x-10)+' '+y+' v-12 a10 10 0 0 1 20 0 v12" fill="none" stroke="'+INK+'" stroke-width="3"/><rect x="'+(x-16)+'" y="'+y+'" width="32" height="26" rx="4" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1.5"/><circle cx="'+x+'" cy="'+(y+13)+'" r="3" fill="'+INK+'"/>'; }
+   [SKY,ROSE,LEAF].forEach(function(c,i){ o+=chave(60+i*100,50,c); });
+   for(var j=0;j<3;j++) o+=cadeado(80+j*100,110);
+   o+=leg(180,165,"cada chave abre um cadeado só, mas ela não sabe qual");
+   return svg("0 0 360 175","Três chaves e três cadeados",o);})(),
+ opts:["2","3","4","6","9"],ans:1,
+ dica:{0:"Para o primeiro cadeado, com azar, ela erra 2 vezes antes de saber qual chave serve. Depois ainda tem o segundo.",
+       2:"Dá para fazer com menos. Quando sobra só uma chave e um cadeado, ela já sabe: não precisa tentar.",
+       3:"Seis é tentar todas as chaves em todos os cadeados, até as que ela já sabe que não servem. Ela não precisa disso.",
+       4:"Nove é demais. Pense: depois de descobrir a chave do primeiro cadeado, sobram só 2 chaves."},
+ resp:"Primeiro cadeado: com azar, ela erra com 2 chaves, e aí já sabe que é a terceira (2 tentativas). Segundo cadeado: sobram 2 chaves; com azar, erra com uma e sabe que é a outra (1 tentativa). Terceiro cadeado: sobrou uma chave só, não precisa tentar. Total: 2 + 1 = 3 tentativas."},
+
+{id:"p7-abacaxi",fam:"Não conte duas vezes",
+ txt:"QUANTAS LETRAS DIFERENTES TEM A PALAVRA ABACAXI?",
+ ill:(function(){var o="", L="ABACAXI".split("");
+   L.forEach(function(l,i){ var x=48+i*44; o+='<rect x="'+(x-18)+'" y="35" width="36" height="44" rx="6" fill="'+(l==="A"?GRAPESOFT:"#fff")+'" stroke="'+INK+'" stroke-width="1.5"/>'+txt(x,66,l,{s:24,w:800,f:l==="A"?GRAPE:INK}); });
+   o+=leg(180,110,"a palavra tem 7 letras, mas algumas se repetem");
+   return svg("0 0 360 120","As letras da palavra ABACAXI",o);})(),
+ opts:["3","4","5","6","7"],ans:2,
+ dica:{0:"Tem mais de três. Vá riscando as que repetem: A, B, C, X, I...",
+       1:"Faltou uma. Olhe de novo: B, C, X, I e também o A.",
+       3:"Uma a menos. O A aparece 3 vezes, mas é uma letra só.",
+       4:"Sete é o total de letras da palavra. Mas o A aparece 3 vezes e conta uma vez só."},
+ resp:"As letras são A, B, A, C, A, X, I. O A aparece três vezes, mas é uma letra só. As letras diferentes são A, B, C, X e I: 5 letras."},
+
+{id:"p7-pilha",fam:"Olhe direito",
+ txt:"A PILHA DA FIGURA TEM TRÊS ANDARES DE CUBOS. O ANDAR DE CIMA TEM 1 CUBO, O DO MEIO TEM 2 × 2 CUBOS E O DE BAIXO TEM 3 × 3 CUBOS. QUANTOS CUBOS HÁ NA PILHA, CONTANDO TAMBÉM OS QUE NÃO APARECEM NA FIGURA?",
+ ill:(function(){var o="", s=24;
+   function camada(n,ox,oy){ var g=""; for(var r=n-1;r>=0;r--) for(var c=0;c<n;c++) g+=cubo(ox+c*s+r*s*0.35,oy-r*s*0.35,s); return g; }
+   o+=camada(3,110,160)+camada(2,122,136)+camada(1,134,112);
+   o+=leg(180,200,"os cubos de trás ficam escondidos atrás dos da frente");
+   return svg("0 0 360 210","Pilha de cubos com três andares",o);})(),
+ opts:["9","12","13","14","15"],ans:3,
+ dica:{0:"Nove é só o andar de baixo (3 × 3). Ainda tem o do meio e o de cima.",
+       1:"Doze seria 9 + 2 + 1. Mas o andar do meio tem 2 × 2 = 4 cubos, não 2.",
+       2:"Faltou um. Some de novo: andar de baixo 9, do meio 4, de cima 1.",
+       4:"Um a mais. O andar de baixo tem 3 × 3 = 9, o do meio 2 × 2 = 4 e o de cima 1."},
+ resp:"Andar de baixo: 3 × 3 = 9 cubos. Andar do meio: 2 × 2 = 4 cubos. Andar de cima: 1 cubo. Total: 9 + 4 + 1 = 14 cubos, mesmo que alguns fiquem escondidos na figura."},
+
+{id:"p7-listras",fam:"Montar direitinho",
+ txt:"DUDA VAI PINTAR UMA BANDEIRA COM TRÊS LISTRAS, USANDO SÓ AZUL E AMARELO. LISTRAS VIZINHAS NÃO PODEM TER A MESMA COR. QUANTAS BANDEIRAS DIFERENTES ELA PODE PINTAR?",
+ ill:(function(){var o="";
+   for(var i=0;i<3;i++) o+='<rect x="90" y="'+(30+i*32)+'" width="130" height="32" fill="#fff" stroke="'+INK+'" stroke-width="2"/>'+txt(155,52+i*32,"?",{s:20,w:800,f:GRAPE});
+   o+='<line x1="90" y1="20" x2="90" y2="140" stroke="'+INK+'" stroke-width="4"/>';
+   o+='<rect x="260" y="50" width="26" height="20" rx="3" fill="'+SKY+'" stroke="'+INK+'" stroke-width="1.2"/>'+txt(296,65,"azul",{s:12,a:"start"})+
+      '<rect x="260" y="84" width="26" height="20" rx="3" fill="#F2D06B" stroke="'+INK+'" stroke-width="1.2"/>'+txt(296,99,"amarelo",{s:12,a:"start"});
+   o+=leg(180,160,"duas listras grudadas não podem ter a mesma cor");
+   return svg("0 0 360 170","Bandeira de três listras e duas cores",o);})(),
+ opts:["2","3","4","6","8"],ans:0,
+ dica:{1:"Tente desenhar as 3. Comece com azul em cima: a do meio tem que ser amarela, e a de baixo tem que ser azul. Sobra alguma outra escolha?",
+       2:"Quatro incluiria bandeiras com listras vizinhas iguais. Com duas cores, cada listra decide a cor da seguinte.",
+       3:"Seis seria com 3 cores. Com só duas cores, a cor de cima já decide todas as outras.",
+       4:"Oito é o total de bandeiras se as listras vizinhas pudessem ser iguais."},
+ resp:"Se a listra de cima é azul, a do meio tem que ser amarela, e a de baixo tem que ser azul de novo. Se a de cima é amarela, a do meio é azul e a de baixo amarela. A cor de cima decide tudo, então só existem 2 bandeiras: azul-amarelo-azul e amarelo-azul-amarelo."},
+
+{id:"p7-cantos",fam:"Ache o diferente",
+ txt:"QUATRO DESTAS FIGURAS SÃO IGUAIS, SÓ QUE GIRADAS. UMA DELAS É DIFERENTE: NÃO DÁ PARA GIRAR NENHUMA DAS OUTRAS E CHEGAR NELA. QUAL É A DIFERENTE?",
+ ill:(function(){var o="", f=[["TR","BR"],["BR","BL"],["TR","TL"],["BL","TL"],["TL","TR"]];
+   f.forEach(function(p,i){ var x=14+i*70; o+='<g transform="translate('+x+',20) scale(0.5)">'+cantoCortado(p[0],p[1])+'</g>'+txt(x+25,90,"ABCDE"[i],{s:14,w:800,f:SOFT}); });
+   o+=leg(180,110,"repare de que lado do canto cortado está a bolinha");
+   return svg("0 0 360 120","Cinco quadrados com um canto cortado e uma bolinha",o);})(),
+ opts:["A","B","C","D","E"],ans:2,
+ dica:{0:"Na figura A, saindo do canto cortado e andando no sentido do relógio, a bolinha é o primeiro canto. Compare com as outras.",
+       1:"A figura B é a A girada um quarto de volta: a bolinha continua logo depois do canto cortado, no sentido do relógio.",
+       3:"A figura D é a A girada meia volta.",
+       4:"A figura E é a A girada três quartos de volta."},
+ resp:"Em A, B, D e E, saindo do canto cortado e andando no sentido do relógio, a bolinha está no canto seguinte. Em C, a bolinha está no canto ANTERIOR ao cortado. Girar não muda isso, então a diferente é a C."},
+
+{id:"p7-elevador",fam:"Olhe direito",
+ txt:"UM ELEVADOR ESTÁ NO 3º ANDAR. ELE SOBE 4 ANDARES, DEPOIS DESCE 5 ANDARES E DEPOIS SOBE 2 ANDARES. EM QUE ANDAR ELE PAROU?",
+ ill:(function(){var o='<rect x="60" y="15" width="60" height="190" fill="#F3EEE4" stroke="'+INK+'" stroke-width="2"/>';
+   for(var i=0;i<=7;i++){ var y=195-i*25; o+='<line x1="60" y1="'+y+'" x2="120" y2="'+y+'" stroke="'+LINE+'" stroke-width="1.5"/>'+txt(135,y-8,(i===0?"T":i+"º"),{s:11,a:"start",w:700,f:i===3?GRAPE:SOFT}); }
+   o+='<rect x="70" y="'+(195-3*25-22)+'" width="40" height="20" rx="3" fill="'+GRAPE+'"/>';
+   o+=txt(200,70,"sobe 4",{s:13,a:"start",w:700})+txt(200,100,"desce 5",{s:13,a:"start",w:700})+txt(200,130,"sobe 2",{s:13,a:"start",w:700})+
+      seta(185,66,"cima",LEAF)+seta(185,96,"baixo",ROSE)+seta(185,126,"cima",LEAF)+leg(240,180,"começa no 3º andar");
+   return svg("0 0 360 215","Prédio com elevador no terceiro andar",o);})(),
+ opts:["2º","3º","4º","5º","7º"],ans:2,
+ dica:{0:"Você desceu um a mais. Refaça com calma: 3, sobe 4 dá 7, desce 5 dá 2, sobe 2 dá...",
+       1:"Três é onde ele COMEÇOU. Siga os três movimentos.",
+       3:"Confira cada passo: 3 + 4 = 7, 7 − 5 = 2, e depois 2 + 2.",
+       4:"Sete é onde ele chegou depois de subir 4. Ainda faltam dois movimentos."},
+ resp:"Começa no 3º. Sobe 4: 3 + 4 = 7º. Desce 5: 7 − 5 = 2º. Sobe 2: 2 + 2 = 4º andar."},
+
+{id:"p7-idade",fam:"Olhe direito",
+ txt:"DAQUI A 3 ANOS, RAFA VAI TER 10 ANOS. QUANTOS ANOS ELE TINHA 2 ANOS ATRÁS?",
+ ill:(function(){var o='<line x1="30" y1="90" x2="330" y2="90" stroke="'+INK+'" stroke-width="2"/>';
+   var pts=[[60,"2 anos atrás","?",GRAPE],[150,"hoje","?",SOFT],[290,"daqui a 3 anos","10 anos",INK]];
+   pts.forEach(function(p){ o+='<circle cx="'+p[0]+'" cy="90" r="7" fill="'+p[3]+'"/>'+txt(p[0],118,p[1],{s:11,f:SOFT})+txt(p[0],62,p[2],{s:16,w:800,f:p[3]}); });
+   o+=seta(230,90,"dir",SOFT);
+   return svg("0 0 360 135","Linha do tempo: dois anos atrás, hoje e daqui a três anos",o);})(),
+ opts:["4","5","7","8","15"],ans:1,
+ dica:{0:"Você tirou 3 e depois 3? Daqui a 3 anos ele terá 10, então HOJE ele tem 7. Agora volte 2 anos.",
+       2:"Sete é a idade dele HOJE. A pergunta é sobre 2 anos atrás.",
+       3:"Você tirou só 2 do 10. Mas 10 é a idade daqui a 3 anos, não a de hoje.",
+       4:"Quinze é 10 + 3 + 2. Mas os dois movimentos são para TRÁS no tempo: a idade diminui."},
+ resp:"Se daqui a 3 anos ele terá 10, hoje ele tem 10 − 3 = 7 anos. Dois anos atrás ele tinha 7 − 2 = 5 anos."}
+];
+
 var PROVAS=[
   {id:"p1",nome:"Prova 1",qs:Q},
   {id:"p2",nome:"Prova 2",qs:Q2},
   {id:"p3",nome:"Prova 3",qs:Q3},
-  {id:"p4",nome:"Prova 4",qs:Q4}
+  {id:"p4",nome:"Prova 4",qs:Q4},
+  {id:"p5",nome:"Prova 5",qs:Q5},
+  {id:"p6",nome:"Prova 6",qs:Q6},
+  {id:"p7",nome:"Prova 7",qs:Q7}
 ];
 
 /* ---------- estado ----------
