@@ -1537,16 +1537,16 @@ var Q6=[
 var Q7=[
 {id:"p7-onibus",fam:"Conte os vãos, não os postes",
  txt:"UM ÔNIBUS SAI DO PONTO 1 E PARA EM TODOS OS PONTOS ATÉ O PONTO 9. DE UM PONTO ATÉ O SEGUINTE ELE LEVA 3 MINUTOS. QUANTO TEMPO ELE LEVA DO PONTO 1 ATÉ O PONTO 9?",
- ill:(function(){var o='<line x1="30" y1="90" x2="330" y2="90" stroke="#B9B2C8" stroke-width="10" stroke-linecap="round"/>';
-   for(var i=0;i<9;i++){ var x=30+i*37.5; o+='<circle cx="'+x+'" cy="90" r="9" fill="'+(i===0||i===8?GRAPE:"#fff")+'" stroke="'+INK+'" stroke-width="1.5"/>'+txt(x,120,i+1,{s:12,w:700});
-     if(i<8) o+=txt(x+18.75,70,"3 min",{s:8,f:SOFT}); }
-   o+='<rect x="20" y="30" width="34" height="22" rx="4" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1.2"/><circle cx="28" cy="54" r="3" fill="'+INK+'"/><circle cx="46" cy="54" r="3" fill="'+INK+'"/>';
-   return svg("0 0 360 135","Nove pontos de ônibus em linha",o);})(),
+ ill:(function(){var o='<line x1="40" y1="90" x2="150" y2="90" stroke="#B9B2C8" stroke-width="10" stroke-linecap="round"/><line x1="150" y1="90" x2="275" y2="90" stroke="#B9B2C8" stroke-width="10" stroke-dasharray="3 13" stroke-linecap="round"/><line x1="275" y1="90" x2="320" y2="90" stroke="#B9B2C8" stroke-width="10" stroke-linecap="round"/>';
+   [[40,1],[95,2],[150,3],[320,9]].forEach(function(p){ o+='<circle cx="'+p[0]+'" cy="90" r="10" fill="'+(p[1]===1||p[1]===9?GRAPE:"#fff")+'" stroke="'+INK+'" stroke-width="1.5"/>'+txt(p[0],122,"ponto "+p[1],{s:11,w:700}); });
+   o+=txt(67.5,72,"3 min",{s:10,f:SOFT})+txt(235,122,"...",{s:16,w:800,f:SOFT});
+   o+='<rect x="23" y="30" width="34" height="22" rx="4" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1.2"/><circle cx="31" cy="54" r="3" fill="'+INK+'"/><circle cx="49" cy="54" r="3" fill="'+INK+'"/>';
+   return svg("0 0 360 135","Linha de ônibus do ponto 1 ao ponto 9",o);})(),
  opts:["9 MINUTOS","21 MINUTOS","24 MINUTOS","27 MINUTOS","30 MINUTOS"],ans:2,
  dica:{0:"Nove é o número de pontos. Entre cada dois pontos ele gasta 3 minutos.",
-       1:"Vinte e um seriam 7 trechos. Conte os trechos entre o ponto 1 e o ponto 9 na figura.",
+       1:"Vinte e um seriam 7 trechos. Imagine o ônibus andando: 1→2, 2→3... Quantos trechos até chegar no 9?",
        3:"Vinte e sete seria 9 × 3, mas 9 pontos em fila têm só 8 trechos entre eles.",
-       4:"Trinta seriam 10 trechos. Olhe a figura: do 1 ao 9 são menos trechos que isso."},
+       4:"Trinta seriam 10 trechos. Do ponto 1 ao ponto 9 são menos trechos que isso."},
  resp:"Do ponto 1 ao ponto 9 existem 8 trechos (1→2, 2→3, ... 8→9). Cada trecho leva 3 minutos: 8 × 3 = 24 minutos."},
 
 {id:"p7-caderno",fam:"Troca justa",
@@ -1556,8 +1556,7 @@ var Q7=[
    function lap(x,y){ return '<rect x="'+x+'" y="'+y+'" width="7" height="36" fill="'+AMBER+'" stroke="'+INK+'" stroke-width="1"/><polygon points="'+x+','+y+' '+(x+3.5)+','+(y-7)+' '+(x+7)+','+y+'" fill="#F5E0A8" stroke="'+INK+'" stroke-width="1"/>'; }
    o+=cad(30,30)+lap(72,34)+lap(86,34)+txt(120,58,"= R$ 8",{s:15,a:"start",w:800});
    o+=cad(30,100)+lap(72,104)+lap(86,104)+lap(100,104)+lap(114,104)+lap(128,104)+txt(160,128,"= R$ 11",{s:15,a:"start",w:800});
-   o+=leg(180,165,"a diferença entre as duas compras são 3 lápis");
-   return svg("0 0 360 175","Caderno com dois lápis e caderno com cinco lápis",o);})(),
+   return svg("0 0 360 155","Caderno com dois lápis e caderno com cinco lápis",o);})(),
  opts:["R$ 1","R$ 3","R$ 5","R$ 6","R$ 8"],ans:3,
  dica:{0:"Um real é o preço de UM lápis. A pergunta é sobre o caderno.",
        1:"Três reais é a diferença entre as compras, que são os 3 lápis a mais. Descubra o preço de um lápis e depois o do caderno.",
@@ -1596,12 +1595,11 @@ var Q7=[
 
 {id:"p7-cofre",fam:"Descubra a regra",
  txt:"PEDRINHO TEM 5 REAIS NO COFRE E GUARDA 2 REAIS POR DIA. DEPOIS DE QUANTOS DIAS ELE VAI TER 15 REAIS?",
- ill:(function(){var o="", dias=["hoje","1 dia","2 dias","3 dias"], vals=[5,7,9,11];
-   dias.forEach(function(d,i){ var x=55+i*78;
-     o+='<rect x="'+(x-28)+'" y="40" width="56" height="60" rx="8" fill="#FFF1D6" stroke="'+INK+'" stroke-width="1.5"/><rect x="'+(x-10)+'" y="36" width="20" height="4" fill="'+INK+'"/>'+
-        txt(x,78,"R$ "+vals[i],{s:13,w:800})+txt(x,120,d,{s:11,f:SOFT}); });
-   o+=txt(335,78,"...",{s:20,w:800,f:SOFT})+leg(180,150,"a cada dia entram mais 2 reais");
-   return svg("0 0 360 160","Cofrinho crescendo dois reais por dia",o);})(),
+ ill:(function(){var o="";
+   function cofre(x,v,l){ return '<rect x="'+(x-38)+'" y="40" width="76" height="66" rx="10" fill="#FFF1D6" stroke="'+INK+'" stroke-width="1.5"/><rect x="'+(x-12)+'" y="35" width="24" height="5" fill="'+INK+'"/>'+txt(x,80,v,{s:16,w:800})+txt(x,128,l,{s:12,f:SOFT}); }
+   o+=cofre(80,"R$ 5","hoje")+cofre(280,"R$ 15","daqui a ? dias");
+   o+=seta(180,78,"dir",GRAPE)+txt(180,60,"+ R$ 2 por dia",{s:12,w:700,f:GRAPE});
+   return svg("0 0 360 145","Cofrinho com 5 reais hoje e 15 reais depois de alguns dias",o);})(),
  opts:["3 DIAS","5 DIAS","7 DIAS","10 DIAS","15 DIAS"],ans:1,
  dica:{0:"Depois de 3 dias ele tem 5 + 2 + 2 + 2 = 11 reais. Ainda não chegou em 15.",
        2:"Depois de 7 dias ele já teria 19 reais, mais do que 15. Ele chega em 15 antes disso.",
@@ -1628,9 +1626,8 @@ var Q7=[
 {id:"p7-abacaxi",fam:"Não conte duas vezes",
  txt:"QUANTAS LETRAS DIFERENTES TEM A PALAVRA ABACAXI?",
  ill:(function(){var o="", L="ABACAXI".split("");
-   L.forEach(function(l,i){ var x=48+i*44; o+='<rect x="'+(x-18)+'" y="35" width="36" height="44" rx="6" fill="'+(l==="A"?GRAPESOFT:"#fff")+'" stroke="'+INK+'" stroke-width="1.5"/>'+txt(x,66,l,{s:24,w:800,f:l==="A"?GRAPE:INK}); });
-   o+=leg(180,110,"a palavra tem 7 letras, mas algumas se repetem");
-   return svg("0 0 360 120","As letras da palavra ABACAXI",o);})(),
+   L.forEach(function(l,i){ var x=48+i*44; o+='<rect x="'+(x-18)+'" y="25" width="36" height="44" rx="6" fill="#fff" stroke="'+INK+'" stroke-width="1.5"/>'+txt(x,56,l,{s:24,w:800}); });
+   return svg("0 0 360 95","As letras da palavra ABACAXI",o);})(),
  opts:["3","4","5","6","7"],ans:2,
  dica:{0:"Tem mais de três. Vá riscando as que repetem: A, B, C, X, I...",
        1:"Faltou uma. Olhe de novo: B, C, X, I e também o A.",
@@ -1639,17 +1636,16 @@ var Q7=[
  resp:"As letras são A, B, A, C, A, X, I. O A aparece três vezes, mas é uma letra só. As letras diferentes são A, B, C, X e I: 5 letras."},
 
 {id:"p7-pilha",fam:"Olhe direito",
- txt:"A PILHA DA FIGURA TEM TRÊS ANDARES DE CUBOS. O ANDAR DE CIMA TEM 1 CUBO, O DO MEIO TEM 2 × 2 CUBOS E O DE BAIXO TEM 3 × 3 CUBOS. QUANTOS CUBOS HÁ NA PILHA, CONTANDO TAMBÉM OS QUE NÃO APARECEM NA FIGURA?",
- ill:(function(){var o="", s=24;
+ txt:"A PILHA DA FIGURA TEM TRÊS ANDARES. CADA ANDAR É UM QUADRADO CHEIO DE CUBOS, SEM BURACOS. QUANTOS CUBOS HÁ NA PILHA, CONTANDO TAMBÉM OS QUE NÃO APARECEM NA FIGURA?",
+ ill:(function(){var o="", s=36;
    function camada(n,ox,oy){ var g=""; for(var r=n-1;r>=0;r--) for(var c=0;c<n;c++) g+=cubo(ox+c*s+r*s*0.35,oy-r*s*0.35,s); return g; }
-   o+=camada(3,110,160)+camada(2,122,136)+camada(1,134,112);
-   o+=leg(180,200,"os cubos de trás ficam escondidos atrás dos da frente");
-   return svg("0 0 360 210","Pilha de cubos com três andares",o);})(),
+   o+=camada(3,105,150)+camada(2,123,114)+camada(1,141,78);
+   return svg("0 0 360 200","Pilha de cubos com três andares",o);})(),
  opts:["9","12","13","14","15"],ans:3,
- dica:{0:"Nove é só o andar de baixo (3 × 3). Ainda tem o do meio e o de cima.",
-       1:"Doze seria 9 + 2 + 1. Mas o andar do meio tem 2 × 2 = 4 cubos, não 2.",
-       2:"Faltou um. Some de novo: andar de baixo 9, do meio 4, de cima 1.",
-       4:"Um a mais. O andar de baixo tem 3 × 3 = 9, o do meio 2 × 2 = 4 e o de cima 1."},
+ dica:{0:"Nove é só o andar de baixo. Ainda tem o do meio e o de cima.",
+       1:"Doze seria 9 + 2 + 1. Mas o andar do meio é um quadrado: atrás dos 2 cubos que aparecem há mais 2.",
+       2:"Faltou um. Conte andar por andar, lembrando dos cubos escondidos atrás e embaixo.",
+       4:"Um a mais. Conte andar por andar: quantos cubos de lado tem cada quadrado?"},
  resp:"Andar de baixo: 3 × 3 = 9 cubos. Andar do meio: 2 × 2 = 4 cubos. Andar de cima: 1 cubo. Total: 9 + 4 + 1 = 14 cubos, mesmo que alguns fiquem escondidos na figura."},
 
 {id:"p7-listras",fam:"Montar direitinho",
@@ -1672,8 +1668,7 @@ var Q7=[
  txt:"QUATRO DESTAS FIGURAS SÃO IGUAIS, SÓ QUE GIRADAS. UMA DELAS É DIFERENTE: NÃO DÁ PARA GIRAR NENHUMA DAS OUTRAS E CHEGAR NELA. QUAL É A DIFERENTE?",
  ill:(function(){var o="", f=[["TR","BR"],["BR","BL"],["TR","TL"],["BL","TL"],["TL","TR"]];
    f.forEach(function(p,i){ var x=14+i*70; o+='<g transform="translate('+x+',20) scale(0.5)">'+cantoCortado(p[0],p[1])+'</g>'+txt(x+25,90,"ABCDE"[i],{s:14,w:800,f:SOFT}); });
-   o+=leg(180,110,"repare de que lado do canto cortado está a bolinha");
-   return svg("0 0 360 120","Cinco quadrados com um canto cortado e uma bolinha",o);})(),
+   return svg("0 0 360 100","Cinco quadrados com um canto cortado e uma bolinha",o);})(),
  opts:["A","B","C","D","E"],ans:2,
  dica:{0:"Na figura A, saindo do canto cortado e andando no sentido do relógio, a bolinha é o primeiro canto. Compare com as outras.",
        1:"A figura B é a A girada um quarto de volta: a bolinha continua logo depois do canto cortado, no sentido do relógio.",
@@ -1683,12 +1678,11 @@ var Q7=[
 
 {id:"p7-elevador",fam:"Olhe direito",
  txt:"UM ELEVADOR ESTÁ NO 3º ANDAR. ELE SOBE 4 ANDARES, DEPOIS DESCE 5 ANDARES E DEPOIS SOBE 2 ANDARES. EM QUE ANDAR ELE PAROU?",
- ill:(function(){var o='<rect x="60" y="15" width="60" height="190" fill="#F3EEE4" stroke="'+INK+'" stroke-width="2"/>';
-   for(var i=0;i<=7;i++){ var y=195-i*25; o+='<line x1="60" y1="'+y+'" x2="120" y2="'+y+'" stroke="'+LINE+'" stroke-width="1.5"/>'+txt(135,y-8,(i===0?"T":i+"º"),{s:11,a:"start",w:700,f:i===3?GRAPE:SOFT}); }
-   o+='<rect x="70" y="'+(195-3*25-22)+'" width="40" height="20" rx="3" fill="'+GRAPE+'"/>';
-   o+=txt(200,70,"sobe 4",{s:13,a:"start",w:700})+txt(200,100,"desce 5",{s:13,a:"start",w:700})+txt(200,130,"sobe 2",{s:13,a:"start",w:700})+
-      seta(185,66,"cima",LEAF)+seta(185,96,"baixo",ROSE)+seta(185,126,"cima",LEAF)+leg(240,180,"começa no 3º andar");
-   return svg("0 0 360 215","Prédio com elevador no terceiro andar",o);})(),
+ ill:(function(){var o='<rect x="50" y="40" width="90" height="130" rx="4" fill="#F3EEE4" stroke="'+INK+'" stroke-width="2"/><line x1="95" y1="40" x2="95" y2="170" stroke="'+INK+'" stroke-width="1.5"/>'+
+      '<rect x="72" y="10" width="46" height="24" rx="5" fill="'+GRAPE+'"/>'+txt(95,28,"3º",{s:15,w:800,f:"#fff"});
+   o+=txt(215,70,"sobe 4",{s:14,a:"start",w:700})+txt(215,105,"desce 5",{s:14,a:"start",w:700})+txt(215,140,"sobe 2",{s:14,a:"start",w:700})+
+      seta(195,66,"cima",LEAF)+seta(195,101,"baixo",ROSE)+seta(195,136,"cima",LEAF);
+   return svg("0 0 360 185","Elevador parado no terceiro andar",o);})(),
  opts:["2º","3º","4º","5º","7º"],ans:2,
  dica:{0:"Você desceu um a mais. Refaça com calma: 3, sobe 4 dá 7, desce 5 dá 2, sobe 2 dá...",
        1:"Três é onde ele COMEÇOU. Siga os três movimentos.",
@@ -1699,7 +1693,7 @@ var Q7=[
 {id:"p7-idade",fam:"Olhe direito",
  txt:"DAQUI A 3 ANOS, RAFA VAI TER 10 ANOS. QUANTOS ANOS ELE TINHA 2 ANOS ATRÁS?",
  ill:(function(){var o='<line x1="30" y1="90" x2="330" y2="90" stroke="'+INK+'" stroke-width="2"/>';
-   var pts=[[60,"2 anos atrás","?",GRAPE],[150,"hoje","?",SOFT],[290,"daqui a 3 anos","10 anos",INK]];
+   var pts=[[60,"2 anos atrás","?",GRAPE],[150,"hoje","",SOFT],[290,"daqui a 3 anos","10 anos",INK]];
    pts.forEach(function(p){ o+='<circle cx="'+p[0]+'" cy="90" r="7" fill="'+p[3]+'"/>'+txt(p[0],118,p[1],{s:11,f:SOFT})+txt(p[0],62,p[2],{s:16,w:800,f:p[3]}); });
    o+=seta(230,90,"dir",SOFT);
    return svg("0 0 360 135","Linha do tempo: dois anos atrás, hoje e daqui a três anos",o);})(),
